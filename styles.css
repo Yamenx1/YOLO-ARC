@@ -176,24 +176,25 @@ footer{border-top:var(--line);margin-top:36px;background:var(--card)}
 @keyframes shake{0%,100%{transform:none}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
 .shake{animation:shake .35s}
 @media(prefers-reduced-motion:reduce){.marquee-in{animation:none}#pressStart{animation:none}.shake{animation:none}}
-/* dungeon dark mode — same system, lights out */
-@media(prefers-color-scheme:dark){
-  :root{--paper:#14100C;--card:#221B17;--ink:#F4EFE2;--mut:#B9AE9C;--sh:5px 5px 0 #000;--sh-sm:3px 3px 0 #000}
-  body{background-image:radial-gradient(#F4EFE214 1px,transparent 1px)}
-  .nav{background:#14100C}
-  input,select,textarea{background:#0e0b09;color:var(--ink)}
-  .cls,.quest,.timer,.logitem,.quizopt,.stats3>div,.ach,.level-head{background:#2A211B}
-  .modal,.cabinet,.card,.sheet,.rule,.poster,.level{background:var(--card)}
-  .xpbar,.sbar,.heat i{background:#0e0b09}
-  .lvlnum,.num,.cls-ico,.qxp{color:#181310}
-  .lvlbox{color:#181310}
-  .tag.open{color:#181310}
-  .ach.on{color:#181310}
-  .hl{color:#181310}
-  .mark{background:var(--yellow)}
-  .top-strip,.engine-line{background:#000}
-  .marquee{background:#000}
-  .btn.dark{background:#000}
-  .lvlbox em{background:#000}
-  .toast,.bigtoast{color:var(--ink)}
-}
+/* dungeon dark theme — enabled by data-theme="dark" on <html> (JS resolves Auto from the OS) */
+:root[data-theme="dark"]{--paper:#14100C;--card:#221B17;--ink:#F4EFE2;--mut:#B9AE9C;--sh:5px 5px 0 #000;--sh-sm:3px 3px 0 #000;color-scheme:dark}
+:root[data-theme="dark"] body{background-image:radial-gradient(#F4EFE214 1px,transparent 1px)}
+:root[data-theme="dark"] .nav{background:#14100C}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:#0e0b09;color:var(--ink)}
+:root[data-theme="dark"] .cls,:root[data-theme="dark"] .quest,:root[data-theme="dark"] .timer,:root[data-theme="dark"] .logitem,:root[data-theme="dark"] .quizopt,:root[data-theme="dark"] .stats3>div,:root[data-theme="dark"] .ach,:root[data-theme="dark"] .level-head{background:#2A211B}
+:root[data-theme="dark"] .modal,:root[data-theme="dark"] .cabinet,:root[data-theme="dark"] .card,:root[data-theme="dark"] .sheet,:root[data-theme="dark"] .rule,:root[data-theme="dark"] .poster,:root[data-theme="dark"] .level{background:var(--card)}
+:root[data-theme="dark"] .xpbar,:root[data-theme="dark"] .sbar,:root[data-theme="dark"] .heat i{background:#0e0b09}
+:root[data-theme="dark"] .lvlnum,:root[data-theme="dark"] .num,:root[data-theme="dark"] .cls-ico,:root[data-theme="dark"] .qxp{color:#181310}
+:root[data-theme="dark"] .lvlbox{color:#181310}
+:root[data-theme="dark"] .tag.open{color:#181310}
+:root[data-theme="dark"] .ach.on,:root[data-theme="dark"] .ach.on span{color:#181310}
+:root[data-theme="dark"] .hl{color:#181310}
+:root[data-theme="dark"] .cls.is-sel,:root[data-theme="dark"] .cls.is-sel span,:root[data-theme="dark"] .cls.is-sel .statline{color:#181310}
+:root[data-theme="dark"] #authSlot .who{color:#181310}
+:root[data-theme="dark"] .recover{background:#3A2320;color:#FFC79A;border-color:#FF4B2D}
+:root[data-theme="dark"] .mark{background:var(--yellow)}
+:root[data-theme="dark"] .top-strip,:root[data-theme="dark"] .engine-line{background:#000}
+:root[data-theme="dark"] .marquee{background:#000}
+:root[data-theme="dark"] .btn.dark{background:#000}
+:root[data-theme="dark"] .lvlbox em{background:#000}
+:root[data-theme="dark"] .bigtoast{color:#181310}

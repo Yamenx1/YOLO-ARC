@@ -466,6 +466,28 @@ function maybeTaunt(){
 }
 $('tauntBtn').onclick=function(){ fetchTaunt(true); };
 $('soundBtn').onclick=function(){ sfxOn=!sfxOn; $('soundBtn').textContent=sfxOn?'SOUND ON':'MUTED'; if(sfxOn) sfx('level'); };
+function themeMode(){ try{ return localStorage.getItem('yoloarc_theme')||'auto'; }catch(e){ return 'auto'; } }
+function applyTheme(mode){
+  var dark = mode==='dark';
+  try{ if(mode==='auto'&&typeof window!=='undefined'&&window.matchMedia){ dark=window.matchMedia('(prefers-color-scheme: dark)').matches; } }catch(e){}
+  try{ document.documentElement.setAttribute('data-theme', dark?'dark':'light'); }catch(e){}
+  var b=$('themeBtn'); if(b) b.textContent = mode==='auto'?'AUTO':(dark?'DARK':'LIGHT');
+  try{ localStorage.setItem('yoloarc_theme', mode); }catch(e){}
+}
+function initTheme(){
+  applyTheme(themeMode());
+  var b=$('themeBtn');
+  if(b) b.onclick=function(){
+    var cur=themeMode();
+    applyTheme(cur==='auto'?'light':(cur==='light'?'dark':'auto'));
+  };
+  try{
+    if(typeof window!=='undefined'&&window.matchMedia){
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(){ if(themeMode()==='auto') applyTheme('auto'); });
+    }
+  }catch(e){}
+}
+try{ initTheme(); }catch(e){}
 $('shareBtn').onclick=function(){ shareVictory(); };
 function shareVictory(){
   try{

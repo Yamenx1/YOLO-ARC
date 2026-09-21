@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23FFC531'/%3E%3Cpath d='M18 4 L8 18 H14 L12 28 L24 12 H17 L18 4 Z' fill='%23181310'/%3E%3C/svg%3E" />
+<script>try{var t=localStorage.getItem('yoloarc_theme')||'auto';var d=t==='dark'||(t==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -28,6 +29,7 @@
     <span class="cloud mono" id="cloudStatus">LOCAL</span>
     <span id="authSlot"></span>
     <span class="streak" id="navStreak"><svg width="12" height="14" viewBox="0 0 12 14"><path d="M6 0 C6 3 2 4 2 8 a4 4 0 0 0 8 0 C10 4 6 3 6 0Z" fill="#FF4B2D"/></svg> <b id="navStreakNum">0</b>&nbsp;day streak</span>
+    <button class="btn small ghost" id="themeBtn" type="button" title="Light / Dark / Auto">AUTO</button>
     <button class="btn small ghost" id="soundBtn" type="button" title="Toggle sound">SOUND ON</button>
     <button class="btn small" id="exportBtn" type="button">Export</button>
     <button class="btn small ghost" id="resetBtn" type="button">Reset</button>
