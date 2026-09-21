@@ -47,6 +47,9 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:"Space Grotes
 .btn.dark{background:var(--ink);color:var(--paper)}
 .btn.ghost{background:transparent;box-shadow:none}
 .btn.block{width:100%;margin-top:12px}
+.btn:disabled{opacity:.55;cursor:wait;transform:none}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+:root[data-theme="dark"] ::placeholder{color:#8A8177;opacity:1}
 
 /* start screen */
 .start{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;padding:44px 20px 10px;align-items:start}

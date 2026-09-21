@@ -327,7 +327,7 @@ function bankXp(qid, q, gain, logLine){
   addLog(logLine+' (+'+gain+' XP)');
   closeModal();
   if(lvl()!==before){ sfx('level'); bigtoast('LEVEL '+lvl()+' — RANK '+rankName(lvl())); }
-  else toast('+'+gain+' XP banked.');
+  else { sfx('blip'); toast('+'+gain+' XP banked.'); }
   render();
 }
 $('mCancel').onclick=function(){ closeModal(); };
@@ -471,6 +471,7 @@ function applyTheme(mode){
   var dark = mode==='dark';
   try{ if(mode==='auto'&&typeof window!=='undefined'&&window.matchMedia){ dark=window.matchMedia('(prefers-color-scheme: dark)').matches; } }catch(e){}
   try{ document.documentElement.setAttribute('data-theme', dark?'dark':'light'); }catch(e){}
+  try{ var mt=document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute('content', dark?'#14100C':'#F4EFE2'); }catch(e){}
   var b=$('themeBtn'); if(b) b.textContent = mode==='auto'?'AUTO':(dark?'DARK':'LIGHT');
   try{ localStorage.setItem('yoloarc_theme', mode); }catch(e){}
 }
@@ -730,7 +731,7 @@ function sfx(kind){
   try{
     sfxUnlock();
     var ctx=sfxCtx; if(!ctx||ctx.state!=='running') return;
-    var seq = kind==='boss' ? [523,659,784,1046] : kind==='hit' ? [220,160] : [660,880];
+    var seq = kind==='boss' ? [523,659,784,1046] : kind==='hit' ? [220,160] : kind==='blip' ? [990] : [660,880];
     for(var i=0;i<seq.length;i++){
       (function(f,t){
         var o=ctx.createOscillator(), g=ctx.createGain();
