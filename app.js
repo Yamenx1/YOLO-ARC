@@ -580,6 +580,8 @@ document.addEventListener('keydown', function(e){
 
 /* ---------- server-first AI pipe (same-origin /api, direct-key fallback for file://) ---------- */
 function extractJSON(content){ var m=String(content||'').match(/\{[\s\S]*\}/); if(!m) throw new Error('empty'); return JSON.parse(m[0]); }
+function isFile(){ try{ return (typeof location!=='undefined')&&location.protocol==='file:'; }catch(e){ return false; } }
+var lastEngineNote='';
 function geminiChat(msgs, temp, cb, allowPrompt){
   function direct(key, cb2, mi){
     var models=[GEMINI_MODEL,'gemini-2.5-flash-lite','gemini-2.0-flash'].filter(function(m,i,a){ return m&&a.indexOf(m)===i; });
@@ -595,12 +597,15 @@ function geminiChat(msgs, temp, cb, allowPrompt){
   }
   fetch('/api/gemini',{ method:'POST', headers:{ 'Content-Type':'application/json' },
     body:JSON.stringify({ messages:msgs, temperature:temp }) })
-  .then(function(r){ if(r.status===503) throw new Error('needs-key'); if(!r.ok) throw new Error('api'); return r.json(); })
+  .then(function(r){
+    if(r.status===503) throw new Error('needs-key');
+    if(!r.ok) return r.json().catch(function(){ return {}; }).then(function(j){ throw new Error('server-'+((j&&j.error)||('http'+r.status))); });
+    return r.json();
+  })
   .then(function(j){ if(!j||!j.content) throw new Error('api'); cb(null, j.content); })
   .catch(function(e){
     var key=getKey();
-    if(!key&&allowPrompt&&(e&&e.message==='needs-key')){ key=ensureKey(); }
-    if(!key&&allowPrompt&&(typeof location!=='undefined')&&location.protocol==='file:'){ key=ensureKey(); }
+    if(!key&&allowPrompt&&((e&&e.message==='needs-key')||isFile())){ key=ensureKey(); }
     if(!key){ cb(e); return; }
     direct(key, cb);
   });
@@ -638,6 +643,7 @@ function arcPrompt(f, goal, seed, avoid){
 }
 function dealArc(f, goal, seed, avoid, done){
   var fb={ goal:goal, doneLooks:f.doneLooks, days:f.days, hrs:f.hrs, exp:f.exp||S.exp||'beginner', pace:f.pace||S.pace||'balanced', seed:seed };
+  lastEngineNote='';
   geminiChat([{role:'user', content:arcPrompt(fb, goal, seed, avoid)}], 0.7, function(err, content){
     if(!err){
       try{
@@ -649,7 +655,13 @@ function dealArc(f, goal, seed, avoid, done){
       }catch(e){}
       addLog('Gemini miss (bad shape) — local engine covered.');
     }
-    else if(err&&err.message!=='no-key'&&err.message!=='needs-key'){ addLog('Gemini miss ('+err.message+') — local engine covered.'); }
+    else {
+      var em=err&&err.message||'';
+      if(em.indexOf('server-ai-4')===0) lastEngineNote='Server AI key rejected — refresh it in Vercel env.';
+      else if(em==='needs-key') lastEngineNote=isFile()?'Set key via the key button.':'Server AI not configured.';
+      else lastEngineNote='';
+      if(lastEngineNote) addLog('Gemini: '+lastEngineNote+' Local engine covered.');
+    }
     TRACKS._ai=smartArc(fb); done('LOCAL');
   }, true);
 }
@@ -718,7 +730,7 @@ function startArc(fromPoster){
     addLog('Boss revealed: '+track().boss.title);
     render();
     document.getElementById('arena').scrollIntoView({ behavior:'smooth' });
-    toast(engine==='GEMINI' ? 'Gemini dealt your arc. Level 1 is open.' : 'Gemini unreachable — local engine dealt it. Set key via the key button.');
+    toast(engine==='GEMINI' ? 'Gemini dealt your arc. Level 1 is open.' : ('Local engine dealt it.'+(lastEngineNote?' '+lastEngineNote:'')));
     lockBtns(false);
   });
 }
@@ -734,7 +746,7 @@ $('remixBtn').onclick=function(){
     dealQuests(allQ().length);
     addLog('REMIX #'+S.seed+' by '+engine+' ('+TRACKS._ai.domain+', weak-link: '+weakestStat().toUpperCase()+').');
     addLog('Boss revealed: '+track().boss.title);
-    render(); toast(engine==='GEMINI'?'Remixed by Gemini — fresh quests and boss.':'Remixed locally — Gemini unreachable.');
+    render(); toast(engine==='GEMINI'?'Remixed by Gemini — fresh quests and boss.':('Remixed locally.'+(lastEngineNote?' '+lastEngineNote:'')));
     lockBtns(false);
   });
 };
