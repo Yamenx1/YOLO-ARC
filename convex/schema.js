@@ -8,5 +8,10 @@ export default defineSchema({
     userId: v.string(),
     data: v.any(),
     updatedAt: v.number()
-  }).index('by_user', ['userId'])
+  }).index('by_user', ['userId']),
+  shared: defineTable({
+    userId: v.string(),
+    data: v.any(),
+    createdAt: v.number()
+  })
 });

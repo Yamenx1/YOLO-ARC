@@ -1,7 +1,7 @@
 // YOLO ARC cloud sync — Clerk sign-in + Convex save backup. Fully optional:
 // no keys configured or offline => the game just plays locally.
 // Both SDKs load from esm.sh (the one channel proven reachable) — no CDN scripts needed.
-import { ConvexClient } from 'https://esm.sh/convex/browser';
+import { ConvexClient } from 'https://esm.sh/convex@1.46.0/browser';
 import { Clerk } from 'https://esm.sh/@clerk/clerk-js@5';
 
 const cfg = (typeof window !== 'undefined' && window.YOLO_CONFIG) || {};
@@ -20,7 +20,7 @@ function diagnose() {
   else if (!me()) msg = 'Cloud: you are signed OUT. Tap SIGN IN — sync starts after login.';
   else msg = 'Cloud: signed in. ' + lastCloudErr;
   try { toast(msg); } catch (e) { alert(msg); }
-  try { if (window.YOLO) addLog('Diagnose: ' + msg); } catch (e) {}
+  try { if (window.YOLO && window.YOLO.log) window.YOLO.log('Diagnose: ' + msg); } catch (e) {}
 }
 
 function paintAuth() {
@@ -30,7 +30,7 @@ function paintAuth() {
   if (!user) {
     slot.innerHTML = '';
     const b = document.createElement('button');
-    b.className = 'btn small dark';
+    b.className = 'btn small authbtn';
     b.type = 'button';
     b.textContent = 'SIGN IN';
     b.onclick = async () => {
@@ -39,7 +39,7 @@ function paintAuth() {
       catch (e) {
         const m = 'Sign-in popup says: ' + String((e && (e.message || (e.errors && e.errors[0] && e.errors[0].message))) || e).slice(0, 140);
         try { toast(m + ' — try the ↗ button.'); } catch (e2) { alert(m); }
-        try { if (window.YOLO) addLog('Sign-in failed: ' + m); } catch (e3) {}
+        try { if (window.YOLO && window.YOLO.log) window.YOLO.log('Sign-in failed: ' + m); } catch (e3) {}
       }
       b.disabled = false;
     };
@@ -104,7 +104,7 @@ async function pushNow() {
 
 async function init() {
   const st = el('cloudStatus');
-  if (st) { st.title = 'Tap to diagnose'; st.style.cursor = 'pointer'; st.onclick = diagnose; }
+  if (st) { st.title = 'Cloud save: LOCAL = this browser only, SYNCED = backed up to your account. Tap to diagnose.'; st.style.cursor = 'pointer'; st.onclick = diagnose; }
   if (!cfg.CLERK_KEY || String(cfg.CLERK_KEY).indexOf('PASTE') === 0) { setStatus('LOCAL — add keys to config.js', 'config.js still has placeholders'); return; }
   try {
     clerk = new Clerk(cfg.CLERK_KEY);
@@ -113,6 +113,10 @@ async function init() {
   paintAuth();
   try { clerk.addListener(paintAuth); } catch (e) {}
   window.__cloudPush = schedulePush;
+  window.__cloudShare = async function(data){
+    if(!client||!me()) throw new Error('no-auth');
+    return await client.mutation('share:create', { data });
+  };
   if (me() && cfg.CONVEX_URL && String(cfg.CONVEX_URL).indexOf('PASTE') !== 0) {
     client = new ConvexClient(cfg.CONVEX_URL);
     client.setAuth(async () => {

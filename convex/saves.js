@@ -28,3 +28,20 @@ export const put = mutation({
     return await ctx.db.insert('saves', { userId, data: args.data, updatedAt: args.updatedAt });
   }
 });
+
+export const share = mutation({
+  args: { data: v.any() },
+  handler: async (ctx, args) => {
+    const userId = await me(ctx);
+    if (!userId) throw new Error('no-auth');
+    return await ctx.db.insert('shared', { userId, data: args.data, createdAt: Date.now() });
+  }
+});
+
+export const view = query({
+  args: { id: v.id('shared') },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.id);
+    return row ? row.data : null;
+  }
+});

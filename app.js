@@ -97,11 +97,11 @@ var ACHS = [
   { id:'lvl4', name:'Arc Walker', desc:'Reach level 4' }
 ];
 
-function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, createdAt:Date.now() }; }
+function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, createdAt:Date.now() }; }
 var S = store.load() || fresh();
 var ORIG_PYTHON_JSON = JSON.stringify(TRACKS.python);
 var selCls = S.cls || 'knight';
-var pendingQ = null, pendingQuiz = null;
+var pendingQ = null, pendingQuiz = null, pendingBoss = null;
 var timerSec = 25*60, timerOn = false, timerId = null, timerElapsed = 0;
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -212,6 +212,11 @@ function render(){
   $('streakTxt').textContent = S.streak; $('navStreakNum').textContent = S.streak;
   $('campaignSub').textContent = S.hero ? (S.goalLabel+' · '+S.days+' days · '+doneN()+'/'+allQ().length+' quests · '+cls.desc) : 'No active arc. Start one above.';
   $('recoveryBox').classList.toggle('hidden', !needsRec());
+  if(needsRec()){
+    $('recoveryBox').innerHTML='STREAK BROKEN — recovery quest pinned to Level 1. '
+      + ((S.freezes||0)>0 ? '<button class="btn small" id="freezeBtn" type="button">USE FREEZE ('+S.freezes+' left)</button> ' : '(freezes: '+(S.freezes||0)+' — earn 1 per 7-day streak) ');
+  }
+  var frz=$('freezeBtn'); if(frz) frz.onclick=useFreeze;
   var tot=S.stats.str+S.stats.int+S.stats.foc;
   $('strTxt').textContent=S.stats.str; $('intTxt').textContent=S.stats.int; $('focTxt').textContent=S.stats.foc;
   $('strBar').style.width=Math.min(100,S.stats.str*12)+'%'; $('intBar').style.width=Math.min(100,S.stats.int*12)+'%'; $('focBar').style.width=Math.min(100,S.stats.foc*12)+'%';
@@ -249,8 +254,15 @@ function render(){
   $('bossTitle').textContent=boss.title; $('bossDesc').textContent=boss.desc;
   $('bossHpTxt').textContent = hp.dead ? 'SLAIN' : hp.hp+' HP';
   var sh=$('shareBtn'); if(sh) sh.classList.toggle('hidden', !hp.dead);
+  var ng=$('ngBtn'); if(ng) ng.classList.toggle('hidden', !hp.dead);
+  var gv=$('graveyard'), gl=$('graveList');
+  if(gv&&gl){
+    var hist=S.history||[];
+    gv.classList.toggle('hidden', !hist.length);
+    gl.innerHTML=hist.map(function(a){ return '<div class="ach'+(a.boss?' on':'')+'"><b>'+(a.boss?'★':'·')+'</b><span><b>'+esc(a.goal)+'</b> — '+a.done+'/'+a.total+' · LV XP '+a.xp+' · '+a.date+(a.ng?' · NG+'+a.ng:'')+'</span></div>'; }).join('');
+  }
   $('bossBar').style.width=hp.hp+'%';
-  var names=bossNames();
+  var names=bossNames(track().domain);
   var bh='';
   for(var t2=0;t2<4;t2++){ var dd=!!S.bossDone['B'+t2];
     bh+='<div class="quest'+(dd?' done':'')+'"><div class="qbox" data-b="B'+t2+'">'+(dd?'✓':'')+'</div><div class="qt"><b>'+names[t2]+'</b><span>Boss objective '+(t2+1)+' of 4 · deals 25 dmg</span></div><div class="qxp">+125 XP</div></div>';
@@ -260,6 +272,9 @@ function render(){
   for(var c=0;c<bb.length;c++){ bb[c].onclick=function(){ bossHit(this.getAttribute('data-b')); }; }
 
   renderDaily();
+  var ae=$('arenaEmpty'), ag=$('arenaGrid');
+  if(ae) ae.classList.toggle('hidden', !!S.hero);
+  if(ag) ag.classList.toggle('hidden', !S.hero);
   renderPosters();
   store.save(S);
   maybeTaunt();
@@ -284,7 +299,8 @@ function openVerify(qid){
     $('mKick').textContent='DAILY DROP · JUDGED 1-10 · UP TO +50 XP';
     $('mTitle').textContent=S.daily.title;
     $('mDesc').textContent='Bonus quest. The Judge grades the proof — sharper proof, more XP.';
-    $('mBody').innerHTML='<textarea id="proof" rows="3" placeholder="Prove today’s quest…"></textarea>';
+    $('mBody').innerHTML='<textarea id="proof" rows="3" placeholder="Prove today’s quest…"></textarea><label class="mono dim" style="font-size:11px">OPTIONAL PHOTO<input id="proofImg" type="file" accept="image/*" /></label>';
+    pendingImg=null; wireProofImg();
     $('modalBack').classList.remove('hidden'); return;
   }
   pendingQ=qid;
@@ -293,7 +309,8 @@ function openVerify(qid){
   $('mTitle').textContent = qid==='R0' ? 'Prove the comeback' : q.title;
   if(qid==='R0' || !isQuiz){
     $('mDesc').textContent='The Judge grades every proof 1-10. Score x 10 = your XP. Be specific.';
-    $('mBody').innerHTML='<textarea id="proof" rows="3" placeholder="What did you actually do? Numbers and artifacts score highest."></textarea>';
+    $('mBody').innerHTML='<textarea id="proof" rows="3" placeholder="What did you actually do? Numbers and artifacts score highest."></textarea><label class="mono dim" style="font-size:11px">OPTIONAL PHOTO<input id="proofImg" type="file" accept="image/*" /></label>';
+    pendingImg=null; wireProofImg();
     pendingQuiz=null;
   } else {
     var item=pickQuiz(); pendingQuiz=item;
@@ -304,9 +321,12 @@ function openVerify(qid){
   $('modalBack').classList.remove('hidden');
 }
 var modalBusy=false;
-function closeModal(){ $('modalBack').classList.add('hidden'); pendingQ=null; pendingQuiz=null; pendingBoss=null; modalBusy=false; var sb=$('mSubmit'); sb.disabled=false; sb.textContent='CLAIM XP'; }
+function closeModal(){ $('modalBack').classList.add('hidden'); pendingQ=null; pendingQuiz=null; pendingBoss=null; pendingImg=null; modalBusy=false; var sb=$('mSubmit'); sb.disabled=false; sb.textContent='CLAIM XP'; }
 function geminiJudge(title, proof, cb){
-  geminiChat([{role:'user', content:'You judge quest proofs in YOLO ARC, a real-life RPG. Goal: "'+S.goalLabel+'". Quest: "'+title+'". Proof: "'+String(proof).slice(0,600)+'". Score 1-10. 1-3 vague or fakeable. 4-6 real effort. 7-8 specific and verifiable. 9-10 undeniable with numbers or artifacts. Reply ONLY JSON {"score":N,"note":"ten words max"}.'}], 0.3, function(err, content){
+  var brief='You judge quest proofs in YOLO ARC, a real-life RPG. Goal: "'+S.goalLabel+'". Quest: "'+title+'". Proof: "'+String(proof).slice(0,600)+'". Score 1-10. 1-3 vague or fakeable. 4-6 real effort. 7-8 specific and verifiable. 9-10 undeniable with numbers or artifacts. Reply ONLY JSON {"score":N,"note":"ten words max"}.';
+  var content=brief;
+  if(pendingImg){ content=[{type:'text',text:brief+' A photo is attached — factor it into the score.'},{type:'image_url',image_url:{url:pendingImg}}]; }
+  geminiChat([{role:'user', content:content}], 0.3, function(err, content){
     if(!err){
       try{
         var o=extractJSON(content);
@@ -350,12 +370,33 @@ $('mSubmit').onclick=function(){
   var isDaily=(pendingQ==='D0');
   geminiJudge(q.title, v, function(res){
     var gain=isDaily?res.score*5:res.score*10;
-    bankXp(pendingQ, q, gain, (isDaily?'Daily drop ':('Judge '+res.score+'/10 ['+res.engine+']'+(res.note?' "'+res.note+'"':'')+' '))+q.title);
+    var photoTag=pendingImg?' [photo]':'';
+    pendingImg=null;
+    bankXp(pendingQ, q, gain, (isDaily?'Daily drop ':('Judge '+res.score+'/10 ['+res.engine+']'+(res.note?' "'+res.note+'"':'')+' '))+q.title+photoTag);
   });
 };
 
-var pendingBoss=null;
-function bossNames(){ return ['Scope + proof plan','Core build','Polish + evidence','Publish + post-mortem']; }
+function bossNames(dom){
+  var d=dom||'general';
+  try{ if(!dom) d=detectDomain(S.goalLabel); }catch(e){}
+  var P={
+    code:['Scope the dataset','Build the core script','Charts + insights','Publish + write-up'],
+    fit:['Base test + photo','Build the engine','Taper + fuel','Race-day proof'],
+    lang:['Script the convo','Drills + vocab','Mock conversations','Record the finale'],
+    biz:['Offer + landing','First outreach wave','Deliver + testimonial','Launch + numbers'],
+    music:['Pick the piece','Slow practice block','Record takes','Perform it'],
+    art:['Studies + refs','Main piece WIP','Feedback + revise','Publish the gallery'],
+    study:['Syllabus sweep','Past papers x5','Weak topics drill','Sit the exam'],
+    general:['Scope + proof plan','Core build','Polish + evidence','Publish + post-mortem']
+  };
+  return P[d]||P.general;
+}
+function useFreeze(){
+  if(!(S.freezes>0)||!needsRec()) return;
+  S.freezes--; S.lastCheckin=new Date().toISOString();
+  addLog('Streak freeze used ('+S.freezes+' left) — streak '+S.streak+' saved.');
+  render(); toast('Freeze burned. Streak '+S.streak+' lives on.');
+}
 function bossHit(id){
   if(S.bossDone[id]) return;
   var last=scaled().length-1;
@@ -363,7 +404,7 @@ function bossHit(id){
   pendingBoss=id; pendingQuiz=null;
   var n=Number(String(id).slice(1))||0;
   $('mKick').textContent='BOSS STRIKE · +125 XP · 25 DMG';
-  $('mTitle').textContent=bossNames()[n]||'Boss strike';
+  $('mTitle').textContent=bossNames(track().domain)[n]||'Boss strike';
   $('mDesc').textContent='Paste link or notes (10+ chars). Bosses respect raw proof — flat reward.';
   $('mBody').innerHTML='<textarea id="proof" rows="3" placeholder="Evidence of the objective…"></textarea>';
   $('modalBack').classList.remove('hidden');
@@ -465,6 +506,21 @@ function maybeTaunt(){
   fetchTaunt(false);
 }
 $('tauntBtn').onclick=function(){ fetchTaunt(true); };
+$('ngBtn').onclick=function(){ ngPlus(); };
+$('shareArcBtn').onclick=function(){ shareArc(); };
+function shareArc(){
+  if(!S.hero){ toast('Start an arc first.'); return; }
+  if(!window.__cloudShare){ toast('Sign in to share.'); return; }
+  toast('Publishing read-only link…');
+  var payload={ goal:S.goalLabel, hero:S.hero, cls:S.cls, lvl:lvl(), xp:S.xp, streak:S.streak, done:doneN(), total:allQ().length, bossHp:bossHP().hp, levels:scaled().map(function(L,li){ var ids=idsFor(li); return { t:L.t, done:ids.filter(function(id){return S.done[id];}).length, total:ids.length }; }) };
+  window.__cloudShare(payload).then(function(id){
+    var url=location.origin+location.pathname.replace(/[^/]*$/,'')+'arc.html?id='+id;
+    addLog('Arc shared.');
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ toast('Link copied — send it anywhere.'); }, function(){ fallbackCopy(url); }); }
+    else fallbackCopy(url);
+  }).catch(function(){ toast('Share failed — is Convex deployed?'); });
+}
+function fallbackCopy(t){ try{ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Link copied — send it anywhere.'); }catch(e){ toast('Copy failed — link in log.'); addLog('Share link: '+t); render(); } }
 $('soundBtn').onclick=function(){ sfxOn=!sfxOn; $('soundBtn').textContent=sfxOn?'SOUND ON':'MUTED'; if(sfxOn) sfx('level'); };
 function themeMode(){ try{ return localStorage.getItem('yoloarc_theme')||'auto'; }catch(e){ return 'auto'; } }
 function applyTheme(mode){
@@ -490,23 +546,26 @@ function initTheme(){
 }
 try{ initTheme(); }catch(e){}
 $('shareBtn').onclick=function(){ shareVictory(); };
+var CLASSCOL={ knight:'#FF4B2D', mage:'#4D7CFE', rogue:'#1F9D55' };
 function shareVictory(){
   try{
     var c=document.createElement('canvas'); c.width=1200; c.height=630;
     var x=c.getContext('2d');
+    var col=CLASSCOL[S.cls]||'#FF4B2D';
     x.fillStyle='#F4EFE2'; x.fillRect(0,0,1200,630);
     x.strokeStyle='#181310'; x.lineWidth=10; x.strokeRect(24,24,1152,582);
-    x.fillStyle='#FF4B2D'; x.fillRect(24,24,1152,90);
-    x.fillStyle='#F4EFE2'; x.font='bold 44px sans-serif'; x.fillText('YOLO ARC — BOSS SLAIN', 60, 88);
+    x.fillStyle=col; x.fillRect(24,24,1152,90);
+    x.fillStyle='#fff'; x.font='bold 44px sans-serif'; x.fillText('YOLO ARC — BOSS SLAIN', 60, 88);
     x.fillStyle='#181310'; x.font='bold 72px sans-serif';
-    x.fillText((S.hero||'Nameless').toUpperCase(), 60, 210);
-    x.font='40px sans-serif'; x.fillText(String(S.goalLabel).slice(0,42), 60, 270);
-    x.font='bold 54px sans-serif';
-    x.fillText('LV '+lvl()+' · '+rankName(lvl())+' · '+S.xp+' XP', 60, 360);
+    x.fillText((S.hero||'Nameless').toUpperCase(), 60, 200);
+    x.font='40px sans-serif'; x.fillText(String(S.goalLabel).slice(0,42), 60, 256);
+    x.fillStyle=col; x.font='bold 40px sans-serif'; x.fillText('BOSS: '+String(track().boss.title).slice(0,44), 60, 312);
+    x.fillStyle='#181310'; x.font='bold 54px sans-serif';
+    x.fillText('LV '+lvl()+' · '+rankName(lvl())+' · '+S.xp+' XP', 60, 386);
     x.font='36px sans-serif';
-    x.fillText('Streak '+S.streak+' days · '+doneN()+' quests cleared', 60, 420);
-    x.fillStyle='#FFC531'; x.fillRect(60,470,400,70);
-    x.fillStyle='#181310'; x.font='bold 38px sans-serif'; x.fillText('LIFE IS THE MAIN QUEST', 80, 518);
+    x.fillText('Streak '+S.streak+' days · '+doneN()+' quests · '+new Date().toISOString().slice(0,10), 60, 440);
+    x.fillStyle='#FFC531'; x.fillRect(60,480,400,70);
+    x.fillStyle='#181310'; x.font='bold 38px sans-serif'; x.fillText('LIFE IS THE MAIN QUEST', 80, 528);
     var a=document.createElement('a');
     a.download='yolo-arc-victory.png'; a.href=c.toDataURL('image/png'); a.click();
     toast('Victory card downloaded.');
@@ -599,6 +658,7 @@ function lockBtns(lock, txt){
   gb.disabled=lock; rb.disabled=lock;
   if(lock){ gb.textContent=txt||'ASKING GEMINI…'; }
   else { gb.textContent='START ARC →'; rb.textContent='REMIX'; }
+  var cab=document.querySelector('.cabinet'); if(cab&&cab.classList) cab.classList.toggle('busy', !!lock);
 }
 /* ---------- arc lifecycle ---------- */
 function readForm(){
@@ -611,13 +671,43 @@ function readForm(){
   };
 }
 function dealQuests(n){ S.ml=S.ml||{str:0,int:0,foc:0,cleared:0,dealt:0}; S.ml.dealt=(S.ml.dealt||0)+n; }
+function snapArc(bossDead){
+  try{ return { goal:S.goalLabel, date:new Date().toISOString().slice(0,10), done:doneN(), total:allQ().length, xp:S.xp, boss:bossDead?1:0, ng:S.ng||0 }; }
+  catch(e){ return null; }
+}
+function pushHist(s){ if(!s) return; try{ S.history=S.history||[]; S.history.unshift(s); S.history=S.history.slice(0,12); }catch(e){} }
+function archiveArc(bossDead){ pushHist(snapArc(bossDead)); }
+function ngPlus(){
+  if(!bossHP().dead) return;
+  var order=['beginner','intermediate','advanced'];
+  var nx=order.indexOf(S.exp||'beginner');
+  var harder=order[Math.min(2,nx+1)];
+  S.ng=(S.ng||0)+1; S.seed=(S.seed||0)+1;
+  archiveArc(true);
+  lockBtns(true, 'NG+ '+(S.ng+1)+'…');
+  var f={ doneLooks:S.doneLooks||'', days:S.days, hrs:S.hrs, exp:harder, pace:S.pace };
+  dealArc(f, S.goalLabel, S.seed, (TRACKS._ai&&TRACKS._ai.boss&&TRACKS._ai.boss.title)||'', function(engine){
+    S.exp=harder;
+    S.done={}; S.bossDone={}; S.taunt=null; S.daily=null;
+    dealQuests(allQ().length);
+    addLog('NG+ '+(S.ng+1)+' by '+engine+' — same hero, harder arc ('+harder+'). Stats and streak carried.');
+    addLog('Boss revealed: '+track().boss.title);
+    render();
+    document.getElementById('arena').scrollIntoView({ behavior:'smooth' });
+    toast('NG+ '+(S.ng+1)+' dealt. The boss remembers you.');
+    lockBtns(false);
+  });
+}
 function startArc(fromPoster){
   var f=readForm();
+  var prevSnap = S.hero ? snapArc(bossHP().dead?true:false) : null;
   S.cls=selCls; S.days=f.days; S.hrs=f.hrs; S.exp=f.exp; S.pace=f.pace;
   S.goalLabel=f.label; S.goalKey='_ai'; S.hero=f.hero;
   lockBtns(true);
   dealArc(f, f.label, S.seed||0, null, function(engine){
-    S.xp=0; S.done={}; S.bossDone={}; S.ach={}; S.log=[]; S.heat={}; S.stats={str:1,int:1,foc:1}; S.daily=null; S.taunt=null;
+    pushHist(prevSnap);
+    S.doneLooks=f.doneLooks;
+    S.xp=0; S.done={}; S.bossDone={}; S.ach={}; S.log=[]; S.heat={}; S.stats={str:1,int:1,foc:1}; S.daily=null; S.taunt=null; S.ng=0;
     S.stats[CLASSES[S.cls].bonus]=3;
     S.streak=0; S.lastCheckin=new Date().toISOString(); S.createdAt=Date.now();
     dealQuests(allQ().length);
@@ -663,7 +753,44 @@ function fillPreset(k){
 (function(){ var btns=document.querySelectorAll('#presetChips [data-preset]'); for(var i=0;i<btns.length;i++) btns[i].onclick=function(){ fillPreset(this.getAttribute('data-preset')); }; })();
 $('burger').onclick=function(){ $('navLinks').classList.toggle('open'); };
 (function(){ var as=document.querySelectorAll('#navLinks a'); for(var i=0;i<as.length;i++){ as[i].onclick=function(){ $('navLinks').classList.remove('open'); }; } })();
-$('pressStart').onclick=function(){ document.querySelector('.cabinet').scrollIntoView({ behavior:'smooth', block:'center' }); $('heroInput').focus(); };
+$('remindBtn').onclick=function(){
+  try{
+    if(typeof window==='undefined'||!('Notification' in window)){ toast('Notifications not supported here.'); return; }
+    Notification.requestPermission().then(function(p){
+      S.remind=(p==='granted'); store.save(S);
+      toast(p==='granted'?'Reminders on — nudge after 2 idle days.':'Reminders blocked.');
+    });
+  }catch(e){ toast('Reminders unavailable.'); }
+};
+function idleNudge(){
+  try{
+    if(!S.remind||!S.hero||!S.lastCheckin) return;
+    if(typeof window==='undefined'||!('Notification' in window)||Notification.permission!=='granted') return;
+    var gap=Math.floor((Date.now()-new Date(S.lastCheckin).getTime())/864e5);
+    if(gap>=2) new Notification('YOLO ARC: streak '+S.streak+' is dying', { body:'One 25-min rep saves it. Open your arena.' });
+  }catch(e){}
+}
+var pendingImg=null;
+function readImg(e){
+  var f=e.target.files&&e.target.files[0]; if(!f) return;
+  try{
+    var img=new Image(); var url=URL.createObjectURL(f);
+    img.onload=function(){
+      try{
+        var cv=document.createElement('canvas');
+        var sc=Math.min(1,768/Math.max(img.width||1,img.height||1));
+        cv.width=Math.max(1,Math.round(img.width*sc)); cv.height=Math.max(1,Math.round(img.height*sc));
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        pendingImg=cv.toDataURL('image/jpeg',0.8);
+        toast('Photo attached — the Judge sees it too.');
+      }catch(err){}
+      try{ URL.revokeObjectURL(url); }catch(e2){}
+    };
+    img.src=url;
+  }catch(e){}
+}
+function wireProofImg(){ var pi=$('proofImg'); if(pi) pi.onchange=readImg; }
+$('emptyStart').onclick=function(){ document.querySelector('.cabinet').scrollIntoView({ behavior:'smooth', block:'center' }); };
 ['heroInput','customGoal','doneInput','deadlineInput'].forEach(function(id){ var n=$(id); if(n&&n.addEventListener){ n.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); var g=$('generateBtn'); if(g&&!g.disabled) g.click(); } }); } });
 $('demoBtn').onclick=function(){ $('heroInput').value='Yamen'; setCls('knight'); fillPreset('python'); startArc(true); };
 function setCls(c){ selCls=c; var btns=document.querySelectorAll('.cls'); for(var i=0;i<btns.length;i++) btns[i].classList.toggle('is-sel', btns[i].getAttribute('data-cls')===c); }
@@ -677,6 +804,7 @@ $('checkinBtn').onclick=function(){
   S.streak=(last===y||last===today)?S.streak+1:1;
   S.lastCheckin=new Date().toISOString(); S.xp+=10; bumpHeat();
   addLog('Check-in · streak '+S.streak+' (+10 XP)');
+  if(S.streak>0&&S.streak%7===0){ S.freezes=Math.min(3,(S.freezes||0)+1); addLog('Freeze earned ('+S.freezes+' banked) — 7-day streak.'); }
   render(); toast('Checked in. Streak: '+S.streak);
 };
 var dangerCb=null;
@@ -761,10 +889,11 @@ function bigtoast(msg){
 (function(){ var m=$('marquee'); m.textContent=(m.textContent||'').repeat(3); })();
 setCls(selCls);
 render();
+try{ idleNudge(); }catch(e){}
 
 // public bridge for cloud sync (cloud.js) — localStorage stays source of truth offline
 try{
   if(typeof window!=='undefined'){
-    window.YOLO={ get:function(){ return S; }, set:function(d){ S=d; selCls=S.cls||'knight'; try{ setCls(selCls); }catch(e){} render(); } };
+    window.YOLO={ get:function(){ return S; }, set:function(d){ S=d; selCls=S.cls||'knight'; try{ setCls(selCls); }catch(e){} render(); }, log:function(t){ try{ addLog(t); }catch(e){} } };
   }
 }catch(e){}

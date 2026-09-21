@@ -15,6 +15,18 @@ function rateOk(ip) {
   return arr.length <= 40;
 }
 
+function cleanContent(c) {
+  if (typeof c === 'string') return c.slice(0, 6000);
+  if (Array.isArray(c)) return c.slice(0, 3).map((p) => {
+    if (!p || typeof p !== 'object') return null;
+    if (p.type === 'image_url' && p.image_url && typeof p.image_url.url === 'string')
+      return { type: 'image_url', image_url: { url: p.image_url.url.slice(0, 700000) } };
+    if (p.type === 'text') return { type: 'text', text: String(p.text || '').slice(0, 6000) };
+    return null;
+  }).filter(Boolean);
+  return '';
+}
+
 module.exports = async function handler(req, res) {
   try {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
@@ -32,8 +44,10 @@ module.exports = async function handler(req, res) {
   const temp = Math.min(1.2, Math.max(0, Number((req.body || {}).temperature) || 0.7));
   const messages = msgs.slice(0, 12).map((m) => ({
     role: m.role === 'system' ? 'system' : 'user',
-    content: String(m.content || '').slice(0, 6000)
+    content: cleanContent(m.content)
   }));
+  if (messages.some((m) => (typeof m.content === 'string' ? !m.content : !m.content.length)))
+    return res.status(400).json({ error: 'bad content' });
   for (const model of MODELS) {
     try {
       const r = await fetch(EP, {

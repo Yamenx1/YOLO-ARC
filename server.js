@@ -36,6 +36,18 @@ function send(res, code, body, type) {
   res.end(body);
 }
 
+function cleanContent(c) {
+  if (typeof c === 'string') return c.slice(0, 6000);
+  if (Array.isArray(c)) return c.slice(0, 3).map((p) => {
+    if (!p || typeof p !== 'object') return null;
+    if (p.type === 'image_url' && p.image_url && typeof p.image_url.url === 'string')
+      return { type: 'image_url', image_url: { url: p.image_url.url.slice(0, 700000) } };
+    if (p.type === 'text') return { type: 'text', text: String(p.text || '').slice(0, 6000) };
+    return null;
+  }).filter(Boolean);
+  return '';
+}
+
 function serveFile(urlPath, res) {
   let p = decodeURIComponent(String(urlPath).split('?')[0]);
   if (p === '/' || !path.extname(p)) p = '/index.html';
@@ -66,8 +78,10 @@ function handleGemini(req, res) {
     }
     const messages = body.messages.slice(0, 12).map((m) => ({
       role: m.role === 'system' ? 'system' : 'user',
-      content: String(m.content || '').slice(0, 6000)
+      content: cleanContent(m.content)
     }));
+    if (messages.some((m) => (typeof m.content === 'string' ? !m.content : !m.content.length)))
+      return send(res, 400, JSON.stringify({ error: 'bad content' }));
     const MODELS = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'].filter((m, i, a) => m && a.indexOf(m) === i);
     for (const model of MODELS) {
       try {

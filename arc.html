@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shared Arc — YOLO ARC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F4EFE2;--card:#FFFDF6;--ink:#181310;--mut:#6B6257;--red:#FF4B2D;--yellow:#FFC531;--green:#1F9D55}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Space Grotesk",sans-serif;display:grid;place-items:center;min-height:100vh;padding:20px}
+.card{width:min(560px,100%);background:var(--card);border:3px solid var(--ink);border-radius:18px;box-shadow:7px 7px 0 var(--ink);padding:26px}
+.mono{font-family:"IBM Plex Mono",monospace}.dim{color:var(--mut)}
+h1{margin:6px 0;font-size:30px;letter-spacing:-.02em}
+.bar{height:14px;border:2px solid var(--ink);border-radius:99px;overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;background:var(--green)}
+.lvl{border:2px solid var(--ink);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:14px;display:flex;justify-content:space-between}
+a{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<div class="card" id="card"><p class="mono dim">LOADING SHARED ARC…</p></div>
+<script type="module">
+import { ConvexClient } from 'https://esm.sh/convex@1.46.0/browser';
+const id = new URLSearchParams(location.search).get('id');
+const card = document.getElementById('card');
+const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+if (!id) { card.innerHTML = '<p>No arc id. Ask the hero for a fresh link.</p>'; }
+else {
+  const cfg = { url: localStorage.getItem('yoloarc_convex') || '' };
+  let base = cfg.url;
+  if (!base) {
+    try {
+      const main = await (await fetch('config.js')).text();
+      const m = main.match(/CONVEX_URL:\s*'([^']+)'/);
+      if (m) base = m[1];
+    } catch (e) {}
+  }
+  if (!base || base.indexOf('PASTE') === 0) { card.innerHTML = '<p>Viewer not configured.</p>'; }
+  else {
+    try {
+      const c = new ConvexClient(base);
+      const d = await c.query('saves:view', { id });
+      if (!d) { card.innerHTML = '<p>Arc not found. Link may be old.</p>'; }
+      else {
+        const pct = Math.round((d.done / Math.max(1, d.total)) * 100);
+        card.innerHTML = '<p class="mono dim">SHARED ARC · READ ONLY</p><h1>' + esc(d.goal) + '</h1>'
+          + '<p><b>' + esc(d.hero) + '</b> · LV ' + d.lvl + ' · ' + d.xp + ' XP · streak ' + d.streak + ' · boss ' + d.bossHp + ' HP</p>'
+          + '<div class="bar"><i style="width:' + pct + '%"></i></div>'
+          + '<p class="mono">' + d.done + '/' + d.total + ' quests</p>'
+          + (d.levels || []).map((l) => '<div class="lvl"><span>' + esc(l.t) + '</span><b>' + l.done + '/' + l.total + '</b></div>').join('')
+          + '<p><a href="./">Start your own arc →</a></p>';
+      }
+    } catch (e) { card.innerHTML = '<p>Could not load this arc. Try again later.</p>'; }
+  }
+}
+</script>
+</body>
+</html>
