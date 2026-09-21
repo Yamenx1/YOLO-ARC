@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YOLO ARC — Life is the main quest</title>
+<meta name="description" content="YOLO ARC turns your real goals into levels, quests, streaks and boss fights. No free XP." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23FFC531'/%3E%3Cpath d='M18 4 L8 18 H14 L12 28 L24 12 H17 L18 4 Z' fill='%23181310'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="top-strip"><div class="container strip-inner">
+  <span>YOLO ARC — SEASON 01</span><span class="dot">●</span><span>NO FREE XP</span><span class="dot">●</span><span>BOSS AT THE END</span>
+</div></div>
+
+<header class="nav"><div class="container nav-inner">
+  <a class="brand" href="#start">
+    <span class="mark"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M10.2 1 L4 10 H7.8 L6.8 17 L14 7 H10.2 L10.2 1 Z" fill="#181310"/></svg></span>
+    <span>YOLO&nbsp;ARC</span><span class="ver">v1.0</span>
+  </a>
+  <nav class="links" id="navLinks"><a href="#rulebook">Rulebook</a><a href="#arena">Arena</a><a href="#posters">Arcs</a></nav>
+  <button class="burger" id="burger" type="button" aria-label="Menu">≡</button>
+  <div class="nav-right">
+    <span class="cloud mono" id="cloudStatus">LOCAL</span>
+    <span id="authSlot"></span>
+    <span class="streak" id="navStreak"><svg width="12" height="14" viewBox="0 0 12 14"><path d="M6 0 C6 3 2 4 2 8 a4 4 0 0 0 8 0 C10 4 6 3 6 0Z" fill="#FF4B2D"/></svg> <b id="navStreakNum">0</b>&nbsp;day streak</span>
+    <button class="btn small ghost" id="soundBtn" type="button" title="Toggle sound">SOUND ON</button>
+    <button class="btn small" id="exportBtn" type="button">Export</button>
+    <button class="btn small ghost" id="resetBtn" type="button">Reset</button>
+  </div>
+</div></header>
+
+<main>
+<!-- ============ START SCREEN ============ -->
+<section class="start container" id="start">
+  <div class="start-left">
+    <p class="kicker"><span class="tick"></span>REAL-LIFE RPG · PLAYED IN REAL LIFE</p>
+    <h1>LIFE IS<br>THE MAIN<br><span class="hl">QUEST.</span></h1>
+    <p class="lede">Pick a hero class. Name your goal and deadline. YOLO ARC deals you levels, daily quests and a final boss — and XP only counts when you show proof.</p>
+    <div class="start-ctas">
+      <button class="btn big red" id="pressStart" type="button">▶&nbsp;&nbsp;PRESS START</button>
+      <button class="btn big" id="demoBtn" type="button">Load demo arc</button>
+    </div>
+    <div class="marquee"><div class="marquee-in" id="marquee">LEARN PYTHON · RUN 5K · SHIP A PORTFOLIO · LEARN SPANISH · READ 12 BOOKS · GET STRONG ·&nbsp;</div></div>
+    <div class="proof-row">
+      <div><b>16 / 16</b><span>quests in demo arc</span></div>
+      <div><b>500 XP</b><span>per level</span></div>
+      <div><b>0</b><span>free XP given</span></div>
+    </div>
+  </div>
+
+  <div class="start-right">
+    <div class="cabinet">
+      <div class="cab-head"><span>CHARACTER SELECT</span><span class="cab-lights"><i></i><i></i><i></i></span></div>
+      <label class="fld">HERO NAME<input id="heroInput" maxlength="18" placeholder="e.g. YAMEN" autocomplete="off" /></label>
+      <div class="classes" id="classRow">
+        <button class="cls is-sel" data-cls="knight" type="button"><span class="cls-ico">▲ KNIGHT</span><b>Knight</b><span>STR path. Wins by showing up daily.</span><span class="statline">STR ■■■□□</span></button>
+        <button class="cls" data-cls="mage" type="button"><span class="cls-ico">● MAGE</span><b>Mage</b><span>INT path. Wins by studying deep.</span><span class="statline">INT ■■■□□</span></button>
+        <button class="cls" data-cls="rogue" type="button"><span class="cls-ico">◆ ROGUE</span><b>Rogue</b><span>FOC path. Wins by fast reps.</span><span class="statline">FOC ■■■□□</span></button>
+      </div>
+      <div class="cab-grid">
+        <label class="fld">YOUR GOAL — TYPE ANYTHING<input id="customGoal" maxlength="60" placeholder="e.g. Learn Python for data analysis" autocomplete="off" /></label>
+        <div class="chips" id="presetChips">
+          <span class="mono dim">QUICK FILL:</span>
+          <button type="button" data-preset="python">Python</button>
+          <button type="button" data-preset="fitness">5K run</button>
+          <button type="button" data-preset="spanish">Spanish</button>
+          <button type="button" data-preset="biz">Side hustle</button>
+        </div>
+        <label class="fld">WHAT DOES “DONE” LOOK LIKE?<input id="doneInput" maxlength="90" placeholder="e.g. Live URL + 3 projects, or 5K in under 32 min" autocomplete="off" /></label>
+        <div class="two">
+          <label class="fld">DAYS<input id="deadlineInput" type="number" min="7" max="180" value="60" /></label>
+          <label class="fld">HRS/DAY<select id="hoursSelect"><option>0.5</option><option selected>1</option><option>2</option><option>3</option></select></label>
+        </div>
+        <div class="two">
+          <label class="fld">EXPERIENCE<select id="expSelect"><option value="beginner">Beginner</option><option value="intermediate">Some base</option><option value="advanced">Advanced</option></select></label>
+          <label class="fld">PACE<select id="paceSelect"><option value="balanced">Balanced</option><option value="grind">Grind</option><option value="chill">Chill</option></select></label>
+        </div>
+        <div class="engine-line"><span class="pulse"></span><span>GEMINI 3.5 FLASH-LITE writes every arc — quests + boss from YOUR words</span><button class="linkbtn" id="keyBtn" type="button" title="Change the Gemini key stored in this browser">key</button></div>
+        <p class="cab-note" id="engineNote">Hosted runs use the built-in server AI. Opened as a file, it asks for your key once (browser-only) — otherwise the local engine covers every feature.</p>
+      </div>
+      <div class="two"><button class="btn big red block" id="generateBtn" type="button">START ARC →</button><button class="btn big block" id="remixBtn" type="button" title="Regenerate quests + boss from your answers">REMIX</button></div>
+      <p class="cab-note">Saves in this browser. Short deadlines merge levels so the workload stays honest.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RULEBOOK ============ -->
+<section class="container rulebook" id="rulebook">
+  <div class="sec-head"><h2>THE RULEBOOK</h2><p>Three rules. No grinding fake XP.</p></div>
+  <div class="rules">
+    <div class="rule"><span class="num">01</span><h3>Get dealt an arc</h3><p>Type any goal + what “done” looks like. The engine detects the domain and deals 4 levels plus one boss. Pace sets 3–5 quests per level; short deadlines merge levels.</p></div>
+    <div class="rule"><span class="num">02</span><h3>Prove it, get graded</h3><p>Gemini the Judge scores every proof 1–10 — score × 10 is your XP. Quizzes are pass/fail gates. Boss rooms need links or notes. Miss 2 days and you pull a recovery quest.</p></div>
+    <div class="rule"><span class="num">03</span><h3>Slay the boss</h3><p>The boss has 100 HP and 4 objectives. Each one deals 25 damage. Finish it and the arc closes — start New Game+ with a harder goal.</p></div>
+  </div>
+</section>
+
+<!-- ============ ARENA ============ -->
+<section class="container arena" id="arena">
+  <div class="sec-head row"><div><h2>THE ARENA</h2><p id="campaignSub">No active arc. Start one above.</p></div>
+  <div class="head-btns"><button class="btn small ghost" id="importBtn" type="button">Import</button><input type="file" id="importFile" accept="application/json" class="hidden" /><button class="btn small dark" id="checkinBtn" type="button">CHECK-IN +10 XP</button></div></div>
+
+  <div class="arena-grid">
+    <div class="side">
+      <div class="sheet">
+        <div class="sheet-top"><div class="face" id="face">K</div>
+          <div><div class="pname" id="charName">NO HERO YET</div><div class="prank mono" id="charRank">RANK: SCRAP · LV 1</div></div>
+          <div class="lvlbox"><span id="charLevel">1</span><em>LV</em></div>
+        </div>
+        <div class="xpbar"><i id="xpBar" style="width:0%"></i></div>
+        <div class="xpmeta mono"><span><b id="xpTxt">0</b> XP</span><span>NEXT <b id="nextTxt">500</b></span><span>STREAK <b id="streakTxt">0</b></span></div>
+        <div class="stats3">
+          <div><span>STR</span><div class="sbar"><i id="strBar" style="width:10%"></i></div><b id="strTxt">1</b></div>
+          <div><span>INT</span><div class="sbar"><i id="intBar" style="width:10%"></i></div><b id="intTxt">1</b></div>
+          <div><span>FOC</span><div class="sbar"><i id="focBar" style="width:10%"></i></div><b id="focTxt">1</b></div>
+        </div>
+        <div class="recover hidden" id="recoveryBox">STREAK BROKEN — a <b>recovery quest</b> is pinned to Level 1. Clear it to restart the streak.</div>
+        <h4>30-DAY HEAT</h4><div class="heat" id="heat"></div>
+        <h4>FOCUS TIMER</h4>
+        <div class="timer"><span class="mono" id="timerTxt">25:00</span><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
+        <h4>AI COACH</h4>
+        <div class="coach"><button class="btn small dark" id="coachBtn" type="button">ASK COACH</button><p id="coachOut" class="dim">One tap. Reads your log, stats and streak.</p></div>
+        <h4>ACHIEVEMENTS</h4><div class="achs" id="achList"></div>
+      </div>
+      <div class="sheet"><h4>DAILY DROP · BONUS QUEST</h4><div id="dailyBox"><p class="dim">Start an arc to unlock the daily drop.</p></div></div>
+      <div class="sheet log"><h4>ADVENTURE LOG</h4><div id="logList" class="loglist"><p class="dim">Nothing yet. Your proofs, check-ins and boss damage land here.</p></div></div>
+    </div>
+
+    <div class="main">
+      <div id="levels"></div>
+      <div class="boss" id="bossCard">
+        <div class="boss-top mono"><span>FINAL BOSS</span><span id="bossHpTxt">??? HP</span></div>
+        <h3 id="bossTitle">???</h3>
+        <p id="bossDesc">Start an arc to reveal your boss.</p>
+        <p class="taunt" id="bossTaunt">The boss is watching…</p>
+        <div class="bhp"><i id="bossBar" style="width:100%"></i></div>
+        <div id="bossTasks" class="btasks"></div>
+        <button class="btn small" id="tauntBtn" type="button" style="margin-top:10px">TAUNT ME</button>
+        <button class="btn small red hidden" id="shareBtn" type="button" style="margin-top:10px;margin-left:8px">SHARE VICTORY</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POSTERS ============ -->
+<section class="container posters" id="posters">
+  <div class="sec-head"><h2>PICK AN ARC</h2><p>Examples — one click fills the cabinet, the engine builds everything from your words.</p></div>
+  <div class="poster-grid" id="templateGrid"></div>
+</section>
+
+<footer><div class="container foot">
+  <span><b>YOLO ARC</b> · finish like a main character.</span>
+  <span class="mono dim">LOCAL SAVE · EXPORT TO KEEP IT · ADD A DB FOR MULTI-DEVICE</span>
+</div></footer>
+</main>
+
+<div class="modal-back hidden" id="modalBack"><div class="modal">
+  <p class="mono dim" id="mKick">VERIFICATION</p>
+  <h3 id="mTitle">Prove quest</h3><p id="mDesc"></p><div id="mBody"></div>
+  <div class="m-actions"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn red" id="mSubmit" type="button">CLAIM XP</button></div>
+</div></div>
+<div class="modal-back hidden" id="dangerBack"><div class="modal danger">
+  <p class="mono dim">⚠ DANGER ZONE — THIS BURNS XP, STREAKS AND LOGS</p>
+  <h3 id="dangerTitle">Burn this arc?</h3><p id="dangerDesc"></p>
+  <div class="m-actions"><button class="btn ghost" id="dangerNo" type="button">Keep it</button><button class="btn red" id="dangerYes" type="button">Burn it</button></div>
+</div></div>
+<div class="bigtoast hidden" id="bigtoast">LEVEL UP</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+<script type="module" src="cloud.js"></script>
+</body>
+</html>
