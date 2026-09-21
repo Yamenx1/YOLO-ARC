@@ -11,8 +11,12 @@ function el(id) { return document.getElementById(id); }
 function setStatus(t, err) { const s = el('cloudStatus'); if (s) s.textContent = t; if (err) lastCloudErr = err; }
 
 function diagnose() {
-  const u = (window.Clerk && window.Clerk.user) ? 'signed in' : 'signed OUT';
-  const msg = 'Cloud: ' + u + '. ' + lastCloudErr + (!((window.Clerk && window.Clerk.user)) ? ' Tap SIGN IN first.' : '');
+  const hasClerk = !!(window.Clerk);
+  const user = !!(hasClerk && window.Clerk.user);
+  let msg;
+  if (!hasClerk) msg = 'Cloud: auth library did not load. Check connection or ad-blocker, then reload.';
+  else if (!user) msg = 'Cloud: you are signed OUT. Tap SIGN IN — sync starts after login.';
+  else msg = 'Cloud: signed in. ' + lastCloudErr;
   try { toast(msg); } catch (e) { alert(msg); }
   try { if (window.YOLO) addLog('Diagnose: ' + msg); } catch (e) {}
 }
