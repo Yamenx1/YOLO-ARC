@@ -33,8 +33,30 @@ function paintAuth() {
     b.className = 'btn small dark';
     b.type = 'button';
     b.textContent = 'SIGN IN';
-    b.onclick = () => { try { clerk.openSignIn(); } catch (e) { toast('Sign-in failed to open.'); } };
+    b.onclick = async () => {
+      b.disabled = true;
+      try { await clerk.openSignIn(); }
+      catch (e) {
+        const m = 'Sign-in popup says: ' + String((e && (e.message || (e.errors && e.errors[0] && e.errors[0].message))) || e).slice(0, 140);
+        try { toast(m + ' — try the ↗ button.'); } catch (e2) { alert(m); }
+        try { if (window.YOLO) addLog('Sign-in failed: ' + m); } catch (e3) {}
+      }
+      b.disabled = false;
+    };
+    const r = document.createElement('button');
+    r.className = 'btn small ghost';
+    r.type = 'button';
+    r.textContent = '↗';
+    r.title = 'Full-page login (use if the popup fails)';
+    r.onclick = async () => {
+      try { await clerk.authenticateWithRedirect({ signInFallbackRedirectUrl: location.href, signUpFallbackRedirectUrl: location.href }); }
+      catch (e) {
+        const m = 'Redirect login says: ' + String((e && e.message) || e).slice(0, 140);
+        try { toast(m); } catch (e2) { alert(m); }
+      }
+    };
     slot.appendChild(b);
+    slot.appendChild(r);
     return;
   }
   slot.innerHTML = '';
