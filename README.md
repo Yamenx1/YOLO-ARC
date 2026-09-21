@@ -13,16 +13,15 @@ saves, Clerk handles sign-in. Works fully offline/local too.
 ## Go live: Vercel + Convex + Clerk (15 minutes, your 3 keys)
 
 **1. Clerk (sign-in) — dashboard.clerk.com**
-- Create application → copy the **Publishable key** (`pk_...`).
+- Application + publishable key: DONE (in `config.js`).
 - Left menu → JWT Templates → New template → **Convex** → Save.
-  Copy the **Issuer URL**.
+  (Issuer `https://mature-duck-4515.clerk.accounts.dev` is already in
+  `convex/auth.config.js`, so no Convex env var needed.)
 
 **2. Convex (database) — terminal in this folder**
-- `npm install convex` then `npx convex dev` (log in, create project).
-- Convex dashboard → Settings → Environment Variables → add
-  `CLERK_JWT_ISSUER_DOMAIN` = the Issuer URL from step 1.
-- `npx convex deploy` → copy the **Deployment URL**
-  (`https://....convex.cloud`).
+- `npm install convex` then `npx convex dev` (log in, select project
+  `insightful-peacock-407`).
+- `npx convex deploy` → deployment URL already in `config.js`.
 
 **3. Wire the frontend — `config.js`**
 - Put the Clerk publishable key in `CLERK_KEY`, Convex URL in `CONVEX_URL`.
