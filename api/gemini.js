@@ -63,5 +63,5 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: 'ai-unreachable' }); }
   }
   return res.status(502).json({ error: 'ai-404-no-model' });
-  } catch (e) { try { return res.status(500).json({ error: 'crashed' }); } catch (e2) {} }
+  } catch (e) { try { return res.status(500).json({ error: 'crashed', detail: String((e && e.message) || e).slice(0, 160) }); } catch (e2) {} }
 };
