@@ -16,6 +16,7 @@ function rateOk(ip) {
 }
 
 module.exports = async function handler(req, res) {
+  try {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method' });
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0] || 'x';
   if (!rateOk(ip)) return res.status(429).json({ error: 'slow down' });
@@ -48,4 +49,5 @@ module.exports = async function handler(req, res) {
     } catch (e) { return res.status(502).json({ error: 'ai-unreachable' }); }
   }
   return res.status(502).json({ error: 'ai-404-no-model' });
+  } catch (e) { try { return res.status(500).json({ error: 'crashed' }); } catch (e2) {} }
 };
