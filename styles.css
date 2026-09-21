@@ -206,3 +206,5 @@ footer{border-top:var(--line);margin-top:36px;background:var(--card)}
 :root[data-theme="dark"] .qbox{background:#2A211B;color:var(--ink)}
 :root[data-theme="dark"] .quest.done .qbox{color:#181310}
 :root[data-theme="dark"] .cls.is-sel b,:root[data-theme="dark"] .ach.on b{color:#181310}
+:root[data-theme="dark"] .quest.done{background:#14532D}
+:root[data-theme="dark"] .quest.done .qt span{color:#BBF7D0}

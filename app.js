@@ -663,6 +663,7 @@ function fillPreset(k){
 $('burger').onclick=function(){ $('navLinks').classList.toggle('open'); };
 (function(){ var as=document.querySelectorAll('#navLinks a'); for(var i=0;i<as.length;i++){ as[i].onclick=function(){ $('navLinks').classList.remove('open'); }; } })();
 $('pressStart').onclick=function(){ document.querySelector('.cabinet').scrollIntoView({ behavior:'smooth', block:'center' }); $('heroInput').focus(); };
+['heroInput','customGoal','doneInput','deadlineInput'].forEach(function(id){ var n=$(id); if(n&&n.addEventListener){ n.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); var g=$('generateBtn'); if(g&&!g.disabled) g.click(); } }); } });
 $('demoBtn').onclick=function(){ $('heroInput').value='Yamen'; setCls('knight'); fillPreset('python'); startArc(true); };
 function setCls(c){ selCls=c; var btns=document.querySelectorAll('.cls'); for(var i=0;i<btns.length;i++) btns[i].classList.toggle('is-sel', btns[i].getAttribute('data-cls')===c); }
 (function(){ var btns=document.querySelectorAll('.cls'); for(var i=0;i<btns.length;i++) btns[i].onclick=function(){ setCls(this.getAttribute('data-cls')); }; })();

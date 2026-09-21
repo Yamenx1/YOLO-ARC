@@ -1,0 +1,11 @@
+{
+  "name": "YOLO ARC — Life is the main quest",
+  "short_name": "YOLO ARC",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F4EFE2",
+  "theme_color": "#181310",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
