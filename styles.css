@@ -204,7 +204,7 @@ footer{border-top:var(--line);margin-top:36px;background:var(--card)}
 :root[data-theme="dark"] .lvlbox{color:#181310}
 :root[data-theme="dark"] .tag.open{color:#181310}
 :root[data-theme="dark"] .ach.on,:root[data-theme="dark"] .ach.on span{color:#181310}
-:root[data-theme="dark"] .hl{color:#181310}
+:root[data-theme="dark"] .hl{background:#A3E635;color:#181310}
 :root[data-theme="dark"] .cls.is-sel,:root[data-theme="dark"] .cls.is-sel span,:root[data-theme="dark"] .cls.is-sel .statline{color:#181310}
 :root[data-theme="dark"] #authSlot .who{color:#181310}
 :root[data-theme="dark"] .recover{background:#3A2320;color:#FFC79A;border-color:#FF4B2D}
