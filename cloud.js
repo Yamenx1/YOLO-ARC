@@ -5,9 +5,17 @@ import { ConvexClient } from 'https://esm.sh/convex/browser';
 const cfg = (typeof window !== 'undefined' && window.YOLO_CONFIG) || {};
 let client = null;
 let pushT = null;
+let lastCloudErr = 'starting…';
 
 function el(id) { return document.getElementById(id); }
-function setStatus(t) { const s = el('cloudStatus'); if (s) s.textContent = t; }
+function setStatus(t, err) { const s = el('cloudStatus'); if (s) s.textContent = t; if (err) lastCloudErr = err; }
+
+function diagnose() {
+  const u = (window.Clerk && window.Clerk.user) ? 'signed in' : 'signed OUT';
+  const msg = 'Cloud: ' + u + '. ' + lastCloudErr + (!((window.Clerk && window.Clerk.user)) ? ' Tap SIGN IN first.' : '');
+  try { toast(msg); } catch (e) { alert(msg); }
+  try { if (window.YOLO) addLog('Diagnose: ' + msg); } catch (e) {}
+}
 
 function paintAuth() {
   const slot = el('authSlot');
@@ -44,11 +52,11 @@ async function pull() {
     const local = (window.YOLO && window.YOLO.get()) || {};
     if (row && row.data && (row.updatedAt || 0) > (local.savedAt || 0)) {
       window.YOLO.set(row.data);
-      setStatus('SYNCED — cloud save loaded');
+      setStatus('SYNCED — cloud save loaded', 'last pull: cloud was newer, loaded it');
     } else {
-      setStatus('SYNCED');
+      setStatus('SYNCED', 'connected, saves flowing both ways');
     }
-  } catch (e) { setStatus('LOCAL — cloud unreachable'); }
+  } catch (e) { setStatus('LOCAL — cloud unreachable', 'pull failed: ' + (e && e.message ? e.message.slice(0, 90) : e)); }
 }
 
 function schedulePush() {
@@ -62,16 +70,18 @@ async function pushNow() {
   try {
     const s = window.YOLO.get();
     await client.mutation('saves:put', { data: s, updatedAt: s.savedAt || Date.now() });
-    setStatus('SYNCED — ' + new Date().toLocaleTimeString());
-  } catch (e) { setStatus('LOCAL — will retry'); }
+    setStatus('SYNCED — ' + new Date().toLocaleTimeString(), 'last push ok');
+  } catch (e) { setStatus('LOCAL — will retry', 'push failed: ' + (e && e.message ? e.message.slice(0, 90) : e)); }
 }
 
 async function init() {
-  if (!cfg.CLERK_KEY || String(cfg.CLERK_KEY).indexOf('PASTE') === 0) { setStatus('LOCAL — add keys to config.js'); return; }
-  if (!window.Clerk) { setStatus('LOCAL — auth offline'); return; }
+  const st = el('cloudStatus');
+  if (st) { st.title = 'Tap to diagnose'; st.style.cursor = 'pointer'; st.onclick = diagnose; }
+  if (!cfg.CLERK_KEY || String(cfg.CLERK_KEY).indexOf('PASTE') === 0) { setStatus('LOCAL — add keys to config.js', 'config.js still has placeholders'); return; }
+  if (!window.Clerk) { setStatus('LOCAL — auth offline', 'Clerk CDN blocked (offline or ad-blocker?)'); return; }
   try {
     await window.Clerk.load({ publishableKey: cfg.CLERK_KEY });
-  } catch (e) { setStatus('LOCAL — auth failed'); return; }
+  } catch (e) { setStatus('LOCAL — auth failed', 'Clerk load failed: ' + (e && e.message ? e.message.slice(0, 80) : e)); return; }
   paintAuth();
   try { window.Clerk.addListener(paintAuth); } catch (e) {}
   window.__cloudPush = schedulePush;
@@ -83,7 +93,7 @@ async function init() {
     });
     pull();
   } else {
-    setStatus(window.Clerk.user ? 'LOCAL — add Convex URL' : 'LOCAL');
+    setStatus(window.Clerk.user ? 'LOCAL — add Convex URL' : 'LOCAL', window.Clerk.user ? 'signed in but CONVEX_URL missing in config.js' : 'loaded fine — you are signed out');
   }
 }
 

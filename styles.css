@@ -198,3 +198,8 @@ footer{border-top:var(--line);margin-top:36px;background:var(--card)}
 :root[data-theme="dark"] .btn.dark{background:#000}
 :root[data-theme="dark"] .lvlbox em{background:#000}
 :root[data-theme="dark"] .bigtoast{color:#181310}
+:root[data-theme="dark"] .lede,:root[data-theme="dark"] .rule p{color:#D8CFC0}
+:root[data-theme="dark"] .chips button{background:#2A211B;color:var(--ink)}
+:root[data-theme="dark"] .qbox{background:#2A211B;color:var(--ink)}
+:root[data-theme="dark"] .quest.done .qbox{color:#181310}
+:root[data-theme="dark"] .cls.is-sel b,:root[data-theme="dark"] .ach.on b{color:#181310}
