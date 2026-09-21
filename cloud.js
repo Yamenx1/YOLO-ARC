@@ -1,21 +1,23 @@
 // YOLO ARC cloud sync — Clerk sign-in + Convex save backup. Fully optional:
 // no keys configured or offline => the game just plays locally.
+// Both SDKs load from esm.sh (the one channel proven reachable) — no CDN scripts needed.
 import { ConvexClient } from 'https://esm.sh/convex/browser';
+import { Clerk } from 'https://esm.sh/@clerk/clerk-js@5';
 
 const cfg = (typeof window !== 'undefined' && window.YOLO_CONFIG) || {};
 let client = null;
+let clerk = null;
 let pushT = null;
 let lastCloudErr = 'starting…';
 
 function el(id) { return document.getElementById(id); }
 function setStatus(t, err) { const s = el('cloudStatus'); if (s) s.textContent = t; if (err) lastCloudErr = err; }
+function me() { return (clerk && clerk.user) || null; }
 
 function diagnose() {
-  const hasClerk = !!(window.Clerk);
-  const user = !!(hasClerk && window.Clerk.user);
   let msg;
-  if (!hasClerk) msg = 'Cloud: auth library did not load. Check connection or ad-blocker, then reload.';
-  else if (!user) msg = 'Cloud: you are signed OUT. Tap SIGN IN — sync starts after login.';
+  if (!clerk) msg = 'Cloud: auth library did not load. Check connection, then reload.';
+  else if (!me()) msg = 'Cloud: you are signed OUT. Tap SIGN IN — sync starts after login.';
   else msg = 'Cloud: signed in. ' + lastCloudErr;
   try { toast(msg); } catch (e) { alert(msg); }
   try { if (window.YOLO) addLog('Diagnose: ' + msg); } catch (e) {}
@@ -23,15 +25,15 @@ function diagnose() {
 
 function paintAuth() {
   const slot = el('authSlot');
-  if (!slot || !window.Clerk) return;
-  const user = window.Clerk.user;
+  if (!slot || !clerk) return;
+  const user = me();
   if (!user) {
     slot.innerHTML = '';
     const b = document.createElement('button');
     b.className = 'btn small dark';
     b.type = 'button';
     b.textContent = 'SIGN IN';
-    b.onclick = () => window.Clerk.openSignIn();
+    b.onclick = () => { try { clerk.openSignIn(); } catch (e) { toast('Sign-in failed to open.'); } };
     slot.appendChild(b);
     return;
   }
@@ -44,7 +46,7 @@ function paintAuth() {
   out.type = 'button';
   out.textContent = 'OUT';
   out.title = 'Sign out';
-  out.onclick = () => window.Clerk.signOut();
+  out.onclick = () => { try { clerk.signOut(); } catch (e) {} };
   slot.appendChild(name);
   slot.appendChild(out);
 }
@@ -64,13 +66,13 @@ async function pull() {
 }
 
 function schedulePush() {
-  if (!client || !window.Clerk || !window.Clerk.user) return;
+  if (!client || !me()) return;
   clearTimeout(pushT);
   pushT = setTimeout(pushNow, 2000);
 }
 
 async function pushNow() {
-  if (!client || !window.Clerk || !window.Clerk.user) return;
+  if (!client || !me()) return;
   try {
     const s = window.YOLO.get();
     await client.mutation('saves:put', { data: s, updatedAt: s.savedAt || Date.now() });
@@ -82,22 +84,22 @@ async function init() {
   const st = el('cloudStatus');
   if (st) { st.title = 'Tap to diagnose'; st.style.cursor = 'pointer'; st.onclick = diagnose; }
   if (!cfg.CLERK_KEY || String(cfg.CLERK_KEY).indexOf('PASTE') === 0) { setStatus('LOCAL — add keys to config.js', 'config.js still has placeholders'); return; }
-  if (!window.Clerk) { setStatus('LOCAL — auth offline', 'Clerk CDN blocked (offline or ad-blocker?)'); return; }
   try {
-    await window.Clerk.load({ publishableKey: cfg.CLERK_KEY });
+    clerk = new Clerk(cfg.CLERK_KEY);
+    await clerk.load();
   } catch (e) { setStatus('LOCAL — auth failed', 'Clerk load failed: ' + (e && e.message ? e.message.slice(0, 80) : e)); return; }
   paintAuth();
-  try { window.Clerk.addListener(paintAuth); } catch (e) {}
+  try { clerk.addListener(paintAuth); } catch (e) {}
   window.__cloudPush = schedulePush;
-  if (window.Clerk.user && cfg.CONVEX_URL && String(cfg.CONVEX_URL).indexOf('PASTE') !== 0) {
+  if (me() && cfg.CONVEX_URL && String(cfg.CONVEX_URL).indexOf('PASTE') !== 0) {
     client = new ConvexClient(cfg.CONVEX_URL);
     client.setAuth(async () => {
-      try { return await window.Clerk.session.getToken({ template: 'convex' }); }
+      try { if (!clerk.session) return null; return await clerk.session.getToken({ template: 'convex' }); }
       catch (e) { return null; }
     });
     pull();
   } else {
-    setStatus(window.Clerk.user ? 'LOCAL — add Convex URL' : 'LOCAL', window.Clerk.user ? 'signed in but CONVEX_URL missing in config.js' : 'loaded fine — you are signed out');
+    setStatus(me() ? 'LOCAL — add Convex URL' : 'LOCAL', me() ? 'signed in but CONVEX_URL missing in config.js' : 'loaded fine — you are signed out');
   }
 }
 
