@@ -188,10 +188,33 @@ footer{border-top:var(--line);margin-top:36px;background:var(--card)}
 .m-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .bigtoast{position:fixed;left:50%;top:26px;transform:translateX(-50%) rotate(-2deg);background:var(--yellow);border:3px solid var(--ink);box-shadow:var(--sh);border-radius:12px;padding:12px 22px;font-weight:700;z-index:80}
 .quizopt{display:flex;gap:8px;align-items:center;border:var(--line);border-radius:10px;padding:9px 11px;margin-top:8px;background:#fff;cursor:pointer;font-size:14px}
-@media(max-width:940px){.start{grid-template-columns:1fr}.start h1{font-size:52px}.arena-grid{grid-template-columns:1fr}.rules,.poster-grid{grid-template-columns:1fr}.links{display:none;position:absolute;top:62px;left:0;right:0;background:var(--card);border-bottom:var(--line);flex-direction:column;padding:12px 20px;gap:12px;margin:0;z-index:40}.links.open{display:flex}.burger{display:block}.streak{display:none}}
+@media(max-width:940px){.start{grid-template-columns:1fr}.start h1{font-size:52px}.arena-grid{grid-template-columns:1fr}.rules,.poster-grid{grid-template-columns:1fr}.links{display:none;position:absolute;top:62px;left:0;right:0;background:var(--card);border-bottom:var(--line);flex-direction:column;padding:12px 20px;gap:12px;margin:0;z-index:40}.links.open{display:flex}.burger{display:block}.streak{display:none}.cloud{display:none}.nav-inner{gap:10px}.nav-right{gap:6px}.menu div{right:-8px}}}
 @keyframes shake{0%,100%{transform:none}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
 .shake{animation:shake .35s}
-@media(prefers-reduced-motion:reduce){.marquee-in{animation:none}#pressStart{animation:none}.shake{animation:none}}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(10px)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes rise{from{transform:translate(-50%,12px);opacity:0}}
+@keyframes bounceIn{0%{transform:translateX(-50%) rotate(-2deg) scale(.7);opacity:0}60%{transform:translateX(-50%) rotate(-2deg) scale(1.06);opacity:1}100%{transform:translateX(-50%) rotate(-2deg) scale(1)}}
+@keyframes tagPulse{0%,100%{box-shadow:var(--sh-sm)}50%{box-shadow:2px 2px 0 var(--green),5px 5px 0 var(--ink)}}
+@keyframes bossFlash{0%{box-shadow:7px 7px 0 var(--red),0 0 0 0 #ff4b2d}100%{box-shadow:7px 7px 0 var(--red),0 0 0 22px transparent}}
+.modal-back{animation:fadeIn .15s ease-out}
+.modal{animation:mIn .18s ease-out}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;background:#181310;color:#F4EFE2;border:2px solid #181310;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:600;box-shadow:4px 4px 0 #FF4B2D;animation:rise .25s ease-out;max-width:min(92vw,480px);text-align:center}
+.bigtoast{animation:bounceIn .45s ease-out}
+.quest{transition:transform .12s,box-shadow .12s}
+.quest:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--ink)}
+.tag.open{animation:tagPulse 1.8s infinite}
+.boss.flash{animation:bossFlash .55s ease-out}
+.loglist{scrollbar-width:thin;scrollbar-color:var(--ink) transparent}
+.loglist::-webkit-scrollbar{width:8px}
+.loglist::-webkit-scrollbar-thumb{background:var(--ink);border-radius:99px}
+.loglist::-webkit-scrollbar-track{background:transparent}
+.streak.hot{border-color:var(--red);box-shadow:2px 2px 0 var(--red)}
+details.score{margin:4px 0 0}
+details.score summary{cursor:pointer;font-size:11px;letter-spacing:.08em;display:inline-block;border:var(--line);border-radius:8px;padding:3px 10px;background:var(--card)}
+details.score p{margin:8px 0 0}
+@media(max-width:768px){.start h1{font-size:44px}.proof-row{flex-wrap:wrap;gap:14px}.cab-grid .two{grid-template-columns:1fr}.timer{flex-direction:column;gap:8px;align-items:stretch;text-align:center}.head-btns{flex-wrap:wrap}.start-ctas .btn{flex:1 1 100%}}
+@media(prefers-reduced-motion:reduce){.marquee-in{animation:none}#pressStart{animation:none}.shake{animation:none}.tag.open{animation:none}.bigtoast{animation:none}.modal,.modal-back,.toast{animation:none}}
 /* dungeon dark theme — enabled by data-theme="dark" on <html> (JS resolves Auto from the OS) */
 :root[data-theme="dark"]{--paper:#14100C;--card:#221B17;--ink:#F4EFE2;--mut:#B9AE9C;--sh:5px 5px 0 #000;--sh-sm:3px 3px 0 #000;color-scheme:dark}
 :root[data-theme="dark"] body{background-image:radial-gradient(#F4EFE214 1px,transparent 1px)}

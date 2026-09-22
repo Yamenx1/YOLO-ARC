@@ -210,6 +210,7 @@ function render(){
   $('xpBar').style.width = pct+'%';
   $('xpTxt').textContent = S.xp; $('nextTxt').textContent = L*500;
   $('streakTxt').textContent = S.streak; $('navStreakNum').textContent = S.streak;
+  var nst=$('navStreak'); if(nst) nst.classList.toggle('hot', S.streak>=3);
   $('campaignSub').textContent = S.hero ? (S.goalLabel+' · '+S.days+' days · '+doneN()+'/'+allQ().length+' quests · '+cls.desc) : 'No active arc. Start one above.';
   $('recoveryBox').classList.toggle('hidden', !needsRec());
   if(needsRec()){
@@ -259,7 +260,7 @@ function render(){
   if(gv&&gl){
     var hist=S.history||[];
     gv.classList.toggle('hidden', !hist.length);
-    gl.innerHTML=hist.map(function(a){ return '<div class="ach'+(a.boss?' on':'')+'"><b>'+(a.boss?'★':'·')+'</b><span><b>'+esc(a.goal)+'</b> — '+a.done+'/'+a.total+' · LV XP '+a.xp+' · '+a.date+(a.ng?' · NG+'+a.ng:'')+'</span></div>'; }).join('');
+    gl.innerHTML=hist.map(function(a){ return '<div class="ach'+(a.boss?' on':'')+'"><b>'+(a.boss?'★':'·')+'</b><span><b>'+esc(a.goal)+'</b> — '+a.done+'/'+a.total+' quests · LV '+(a.lvl||'?')+' · '+a.xp+' XP · streak '+(a.streak||0)+' · '+a.date+(a.ng?' · NG+'+a.ng:'')+'</span></div>'; }).join('');
   }
   $('bossBar').style.width=hp.hp+'%';
   var names=bossNames(track().domain);
@@ -684,7 +685,7 @@ function readForm(){
 }
 function dealQuests(n){ S.ml=S.ml||{str:0,int:0,foc:0,cleared:0,dealt:0}; S.ml.dealt=(S.ml.dealt||0)+n; }
 function snapArc(bossDead){
-  try{ return { goal:S.goalLabel, date:new Date().toISOString().slice(0,10), done:doneN(), total:allQ().length, xp:S.xp, boss:bossDead?1:0, ng:S.ng||0 }; }
+  try{ return { goal:S.goalLabel, date:new Date().toISOString().slice(0,10), done:doneN(), total:allQ().length, xp:S.xp, lvl:lvl(), streak:S.streak, boss:bossDead?1:0, ng:S.ng||0 }; }
   catch(e){ return null; }
 }
 function pushHist(s){ if(!s) return; try{ S.history=S.history||[]; S.history.unshift(s); S.history=S.history.slice(0,12); }catch(e){} }
@@ -736,6 +737,8 @@ function startArc(fromPoster){
 }
 $('generateBtn').onclick=function(){ startArc(false); };
 $('remixBtn').onclick=function(){
+  if(S.xp>0&&!window.__remixOk){ askDanger('Remix and reset progress?', 'Quests, boss and proofs regenerate. XP, stats, streak and ML memory stay.', function(){ window.__remixOk=true; $('remixBtn').click(); }); return; }
+  window.__remixOk=false;
   var f=readForm(); S.seed=(S.seed||0)+1;
   var goal=(f.label&&f.label!=='My arc')?f.label:S.goalLabel;
   var avoid=(TRACKS._ai&&TRACKS._ai.boss&&TRACKS._ai.boss.title)||'';
@@ -845,6 +848,7 @@ $('timerBtn').onclick=function(){
   timerId=setInterval(function(){ timerSec--; timerElapsed++; if(timerSec<=0){ clearInterval(timerId); timerOn=false; timerSec=25*60; timerElapsed=0; $('timerBtn').textContent='Start'; finishFocus(true);} $('timerTxt').textContent=fmt(timerSec); },1000);
 };
 $('timerDone').onclick=function(){ finishFocus(false); };
+$('timerReset').onclick=function(){ try{ clearInterval(timerId); }catch(e){} timerOn=false; timerSec=25*60; timerElapsed=0; $('timerBtn').textContent='Start'; $('timerTxt').textContent=fmt(timerSec); };
 function finishFocus(auto){
   if(!auto&&timerElapsed<60){ toast('Run the timer 60s+ first — no free XP.'); return; }
   timerElapsed=0;
@@ -884,11 +888,10 @@ function sfx(kind){
     }
   }catch(e){}
 }
-function shakeBoss(){ var b=$('bossCard'); if(!b||!b.classList) return; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
+function shakeBoss(){ var b=$('bossCard'); if(!b||!b.classList) return; b.classList.remove('shake'); b.classList.remove('flash'); void b.offsetWidth; b.classList.add('shake'); b.classList.add('flash'); setTimeout(function(){ try{ b.classList.remove('flash'); }catch(e){} }, 600); }
 function toast(msg){
   var t=document.createElement('div');
-  t.textContent=msg;
-  t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;background:#181310;color:#F4EFE2;border:2px solid #181310;border-radius:11px;padding:11px 18px;font-size:14px;font-weight:600;box-shadow:4px 4px 0 #FF4B2D';
+  t.className='toast'; t.textContent=msg;
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); },2600);
 }
@@ -902,6 +905,7 @@ function bigtoast(msg){
 setCls(selCls);
 render();
 try{ idleNudge(); }catch(e){}
+try{ if(S.hero){ document.getElementById('arena').scrollIntoView(); } }catch(e){}
 
 // public bridge for cloud sync (cloud.js) — localStorage stays source of truth offline
 try{

@@ -9,6 +9,7 @@
 <meta property="og:title" content="YOLO ARC — Life is the main quest" />
 <meta property="og:description" content="Turn any goal into levels, verified XP and a final boss fight." />
 <meta property="og:type" content="website" />
+<meta property="og:image" content="https://yolo-arc-yo.vercel.app/icon-180.png" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,7 +110,7 @@
 
 <!-- ============ ARENA ============ -->
 <section class="container arena" id="arena">
-  <div class="sec-head row"><div><h2>THE ARENA</h2><p id="campaignSub">No active arc. Start one above.</p><p class="mono dim" style="font-size:11px;letter-spacing:.06em">SCORE TABLE — QUEST 0–100 · DAILY 0–50 · BOSS 125 · QUIZ 100 · CHECK-IN 10 · FOCUS 15 · LEVEL = 500 XP</p></div>
+  <div class="sec-head row"><div><h2>THE ARENA</h2><p id="campaignSub">No active arc. Start one above.</p><details class="score"><summary class="mono dim">SCORE TABLE</summary><p class="mono dim" style="font-size:11px">QUEST 0–100 · DAILY 0–50 · BOSS 125 · QUIZ 100 · CHECK-IN 10 · FOCUS 15 · LEVEL = 500 XP</p></details></div>
   <div class="head-btns"><button class="btn small ghost" id="importBtn" type="button">Import</button><input type="file" id="importFile" accept="application/json" class="hidden" /><button class="btn small dark" id="checkinBtn" type="button">CHECK-IN +10 XP</button><button class="btn small" id="shareArcBtn" type="button" title="Public read-only link">SHARE ARC</button></div></div>
 
   <div id="arenaEmpty" class="empty">
@@ -135,7 +136,7 @@
         <div class="recover hidden" id="recoveryBox">STREAK BROKEN — a <b>recovery quest</b> is pinned to Level 1. Clear it to restart the streak.</div>
         <h4>30-DAY HEAT</h4><div class="heat" id="heat"></div>
         <h4>FOCUS TIMER</h4>
-        <div class="timer"><span class="mono" id="timerTxt">25:00</span><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
+        <div class="timer"><span class="mono" id="timerTxt">25:00</span><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerReset" type="button">Reset</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
         <h4>AI COACH</h4>
         <div class="coach"><button class="btn small dark" id="coachBtn" type="button">ASK COACH</button><button class="btn small ghost" id="remindBtn" type="button" title="Nudge me on this device after 2 idle days">REMIND ME</button><p id="coachOut" class="dim">One tap. Reads your log, stats and streak.</p></div>
         <h4>ACHIEVEMENTS</h4><div class="achs" id="achList"></div>
