@@ -39,7 +39,7 @@
     <span class="streak" id="navStreak"><svg width="12" height="14" viewBox="0 0 12 14"><path d="M6 0 C6 3 2 4 2 8 a4 4 0 0 0 8 0 C10 4 6 3 6 0Z" fill="#FF4B2D"/></svg> <b id="navStreakNum">0</b>&nbsp;day streak</span>
     <button class="btn small ghost" id="themeBtn" type="button" title="Light / Dark / Auto">AUTO</button>
     <button class="btn small ghost" id="soundBtn" type="button" title="Toggle sound">SOUND ON</button>
-    <details class="menu"><summary title="More">⋯</summary><div><button class="btn small" id="exportBtn" type="button">Export</button><button class="btn small ghost" id="resetBtn" type="button">Reset</button></div></details>
+    <details class="menu"><summary title="More">⋯</summary><div><button class="btn small" id="exportBtn" type="button">Export</button><button class="btn small ghost" id="resetBtn" type="button">Reset</button><button class="btn small ghost" id="wipeBtn" type="button" title="Delete cloud saves">Wipe cloud</button></div></details>
   </div>
 </div></header>
 
@@ -136,7 +136,7 @@
         <div class="recover hidden" id="recoveryBox">STREAK BROKEN — a <b>recovery quest</b> is pinned to Level 1. Clear it to restart the streak.</div>
         <h4>30-DAY HEAT</h4><div class="heat" id="heat"></div>
         <h4>FOCUS TIMER</h4>
-        <div class="timer"><span class="mono" id="timerTxt">25:00</span><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerReset" type="button">Reset</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
+        <div class="timer"><span class="mono" id="timerTxt">25:00</span><select id="timerLen" title="Minutes"><option>15</option><option selected>25</option><option>50</option></select><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerReset" type="button">Reset</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
         <h4>AI COACH</h4>
         <div class="coach"><button class="btn small dark" id="coachBtn" type="button">ASK COACH</button><button class="btn small ghost" id="remindBtn" type="button" title="Nudge me on this device after 2 idle days">REMIND ME</button><p id="coachOut" class="dim">One tap. Reads your log, stats and streak.</p></div>
         <h4>ACHIEVEMENTS</h4><div class="achs" id="achList"></div>
@@ -151,6 +151,7 @@
         <div class="boss-top mono"><span>FINAL BOSS</span><span id="bossHpTxt">??? HP</span></div>
         <h3 id="bossTitle">???</h3>
         <p id="bossDesc">Start an arc to reveal your boss.</p>
+        <p class="mono dim" id="bossMood" style="font-size:11px"></p>
         <p class="taunt" id="bossTaunt">The boss is watching…</p>
         <div class="bhp"><i id="bossBar" style="width:100%"></i></div>
         <div id="bossTasks" class="btasks"></div>

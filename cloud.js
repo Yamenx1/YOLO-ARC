@@ -117,6 +117,10 @@ async function init() {
     if(!client||!me()) throw new Error('no-auth');
     return await client.mutation('share:create', { data });
   };
+  window.__cloudWipe = async function(){
+    if(!client||!me()) throw new Error('no-auth');
+    return await client.mutation('wipe', {});
+  };
   if (me() && cfg.CONVEX_URL && String(cfg.CONVEX_URL).indexOf('PASTE') !== 0) {
     client = new ConvexClient(cfg.CONVEX_URL);
     client.setAuth(async () => {

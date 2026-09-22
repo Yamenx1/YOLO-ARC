@@ -94,10 +94,14 @@ var ACHS = [
   { id:'half', name:'Halfway Hero', desc:'50% of arc done' },
   { id:'boss', name:'Boss Slayer', desc:'Drop the boss to 0 HP' },
   { id:'focused', name:'Timekeeper', desc:'Log a focus session' },
+  { id:'photo', name:'Receipts', desc:'Attach a photo proof' },
+  { id:'early', name:'Early Bird', desc:'Check in before 8am' },
+  { id:'plus', name:'NG+ Survivor', desc:'Start New Game+' },
+  { id:'inferno', name:'Inferno', desc:'30-day streak' },
   { id:'lvl4', name:'Arc Walker', desc:'Reach level 4' }
 ];
 
-function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, createdAt:Date.now() }; }
+function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, skipped:{}, createdAt:Date.now() }; }
 var S = store.load() || fresh();
 var ORIG_PYTHON_JSON = JSON.stringify(TRACKS.python);
 var selCls = S.cls || 'knight';
@@ -112,15 +116,24 @@ function allQ(){ var out=[], t=track(); for(var li=0; li<t.levels.length; li++){
 function scaled(){ var t=track(); if(S.days<=21 && t.levels.length>3){ return [t.levels[0], { t:t.levels[1].t.split(' ')[0]+' + '+t.levels[2].t.split(' ')[0], d:'Condensed — honest workload', qs:t.levels[1].qs.slice(0,2).concat(t.levels[2].qs.slice(0,2)) }, t.levels[3]]; } return t.levels; }
 function idsFor(li){ var all=allQ(), n=scaled().length, per=Math.ceil(all.length/n); return all.slice(li*per,(li+1)*per).map(function(q){return q.id;}); }
 function findQ(id){ if(id==='R0') return { title:'Recovery run', sub:'15-min comeback', stat:'foc' }; if(id==='D0'&&S.daily&&S.daily.title) return { title:S.daily.title, sub:S.daily.sub, stat:S.daily.stat }; var all=allQ(); for(var i=0;i<all.length;i++) if(all[i].id===id) return all[i]; return { title:id, sub:'', stat:'foc' }; }
-function lvlDone(li){ var ids=idsFor(li); return ids.length>0 && ids.every(function(id){return S.done[id];}); }
-function doneN(){ return Object.keys(S.done).length; }
+function isDone(id){ return !!(S.done[id]||(S.skipped&&S.skipped[id])); }
+function lvlDone(li){ var ids=idsFor(li); return ids.length>0 && ids.every(function(id){return isDone(id);}); }
+function doneN(){ return Object.keys(S.done).length+Object.keys(S.skipped||{}).length; }
+function skipQuest(qid){
+  if(isDone(qid)||S.xp<25) return;
+  askDanger('Skip this quest?', 'Costs 25 XP. No stats, no glory — but the level unlocks.', function(){
+    S.xp=Math.max(0,S.xp-25); S.skipped=S.skipped||{}; S.skipped[qid]=Date.now();
+    var q=findQ(qid); addLog('Skipped “'+q.title+'” (−25 XP)');
+    render(); toast('Skipped. −25 XP.');
+  });
+}
 function bossHP(){ var n=Object.keys(S.bossDone).length; return { hp:Math.max(0,100-n*25), dead:n>=4 }; }
 function needsRec(){ if(!S.lastCheckin || S.done.R0) return false; return Math.floor((Date.now()-new Date(S.lastCheckin).getTime())/864e5)>=2; }
 function todayK(){ return new Date().toISOString().slice(0,10); }
 function bumpHeat(){ var k=todayK(); S.heat[k]=(S.heat[k]||0)+1; }
 function addLog(t){ S.log.unshift(new Date().toLocaleString()+' — '+t); S.log=S.log.slice(0,40); }
 
-function checkAch(){ if(doneN()>=1) S.ach.first=1; if(S.streak>=3) S.ach.streak3=1; if(doneN()>=Math.ceil(allQ().length/2)) S.ach.half=1; if(bossHP().dead) S.ach.boss=1; if(lvl()>=4) S.ach.lvl4=1; }
+function checkAch(){ if(doneN()>=1) S.ach.first=1; if(S.streak>=3) S.ach.streak3=1; if(S.streak>=30) S.ach.inferno=1; if(doneN()>=Math.ceil(allQ().length/2)) S.ach.half=1; if(bossHP().dead) S.ach.boss=1; if(lvl()>=4) S.ach.lvl4=1; if((S.ng||0)>=1) S.ach.plus=1; }
 
 /* ---------- SMART ARC ENGINE (on-device AI + tiny ML) ----------
    Reads goal + done-looks + experience + pace, detects the domain,
@@ -241,7 +254,7 @@ function render(){
     html+='<div class="level"><div class="level-head"><div class="lvlnum">'+(dn===ids.length?'★':(li+1))+'</div><div><h3>LEVEL '+(li+1)+' — '+esc(sc[li].t)+'</h3><p>'+esc(sc[li].d)+' · '+dn+'/'+ids.length+(locked?' · clear previous level':'')+'</p></div>'+tag+'</div><div class="quests">';
     for(var j=0;j<ids.length;j++){
       var q=findQ(ids[j]), done=!!S.done[ids[j]];
-      html+='<div class="quest'+(done?' done':'')+(locked&&!done?' locked':'')+'"><div class="qbox" data-q="'+ids[j]+'">'+(done?'✓':'')+'</div><div class="qt"><b>'+esc(q.title)+'</b><span>'+esc(q.sub)+' · +'+q.stat.toUpperCase()+'</span></div><div class="qxp">+100 XP</div></div>';
+      html+='<div class="quest'+(done?' done':'')+(locked&&!done?' locked':'')+'"><div class="qbox" data-q="'+ids[j]+'">'+(done?'✓':'')+'</div><div class="qt"><b>'+esc(q.title)+'</b><span>'+esc(q.sub)+' · +'+q.stat.toUpperCase()+'</span></div>'+((!done&&!locked&&S.xp>=25)?'<button class="skipbtn" data-skip="'+ids[j]+'" title="Skip for 25 XP">SKIP −25</button>':'')+'<div class="qxp">+100 XP</div></div>';
     }
     if(li===0 && needsRec() && !S.done.R0) html+='<div class="quest"><div class="qbox" data-q="R0"></div><div class="qt"><b>Recovery run: 15-min comeback</b><span>Any 15-min session + 1 sentence of proof</span></div><div class="qxp">+50 XP</div></div>';
     html+='</div></div>';
@@ -249,10 +262,14 @@ function render(){
   $('levels').innerHTML = html;
   var boxes=document.querySelectorAll('[data-q]');
   for(var b=0;b<boxes.length;b++){ boxes[b].onclick=function(){ openVerify(this.getAttribute('data-q')); }; }
+  var skips=document.querySelectorAll('[data-skip]');
+  for(var sk=0;sk<skips.length;sk++){ skips[sk].onclick=function(e){ if(e&&e.stopPropagation) e.stopPropagation(); skipQuest(this.getAttribute('data-skip')); }; }
 
   // boss
   var boss=track().boss, hp=bossHP();
   $('bossTitle').textContent=boss.title; $('bossDesc').textContent=boss.desc;
+  var mood=$('bossMood');
+  if(mood){ mood.textContent = !S.hero ? '' : hp.dead ? 'SLAIN. Hang it on the wall.' : hp.hp>=100 ? 'Mood: yawning. How cute.' : hp.hp>=75 ? 'Mood: it stands up.' : hp.hp>=50 ? 'Mood: ENRAGED. Half dead, twice as mean.' : 'Mood: wobbling. One more strike.'; }
   $('bossHpTxt').textContent = hp.dead ? 'SLAIN' : hp.hp+' HP';
   var sh=$('shareBtn'); if(sh) sh.classList.toggle('hidden', !hp.dead);
   var ng=$('ngBtn'); if(ng) ng.classList.toggle('hidden', !hp.dead);
@@ -294,7 +311,7 @@ function openVerify(qid){
   for(var i=0;i<all.length;i++) if(all[i].id===qid) idx=i;
   var li = qid==='R0' ? 0 : Math.floor(idx/Math.ceil(all.length/scaled().length));
   if(li>0 && !lvlDone(li-1)){ toast('Clear Level '+li+' first — locked.'); return; }
-  if(S.done[qid]) return;
+  if(isDone(qid)) return;
   if(qid==='D0'){
     pendingQ=qid; pendingQuiz=null;
     $('mKick').textContent='DAILY DROP · JUDGED 1-10 · UP TO +50 XP';
@@ -372,6 +389,7 @@ $('mSubmit').onclick=function(){
   geminiJudge(q.title, v, function(res){
     var gain=isDaily?res.score*5:res.score*10;
     var photoTag=pendingImg?' [photo]':'';
+    if(pendingImg) S.ach.photo=1;
     pendingImg=null;
     bankXp(pendingQ, q, gain, (isDaily?'Daily drop ':('Judge '+res.score+'/10 ['+res.engine+']'+(res.note?' "'+res.note+'"':'')+' '))+q.title+photoTag);
   });
@@ -701,7 +719,7 @@ function ngPlus(){
   var f={ doneLooks:S.doneLooks||'', days:S.days, hrs:S.hrs, exp:harder, pace:S.pace };
   dealArc(f, S.goalLabel, S.seed, (TRACKS._ai&&TRACKS._ai.boss&&TRACKS._ai.boss.title)||'', function(engine){
     S.exp=harder;
-    S.done={}; S.bossDone={}; S.taunt=null; S.daily=null;
+    S.done={}; S.skipped={}; S.bossDone={}; S.taunt=null; S.daily=null;
     dealQuests(allQ().length);
     addLog('NG+ '+(S.ng+1)+' by '+engine+' — same hero, harder arc ('+harder+'). Stats and streak carried.');
     addLog('Boss revealed: '+track().boss.title);
@@ -720,7 +738,7 @@ function startArc(fromPoster){
   dealArc(f, f.label, S.seed||0, null, function(engine){
     pushHist(prevSnap);
     S.doneLooks=f.doneLooks;
-    S.xp=0; S.done={}; S.bossDone={}; S.ach={}; S.log=[]; S.heat={}; S.stats={str:1,int:1,foc:1}; S.daily=null; S.taunt=null; S.ng=0;
+    S.xp=0; S.done={}; S.skipped={}; S.bossDone={}; S.ach={}; S.log=[]; S.heat={}; S.stats={str:1,int:1,foc:1}; S.daily=null; S.taunt=null; S.ng=0;
     S.stats[CLASSES[S.cls].bonus]=3;
     S.streak=0; S.lastCheckin=new Date().toISOString(); S.createdAt=Date.now();
     dealQuests(allQ().length);
@@ -745,7 +763,7 @@ $('remixBtn').onclick=function(){
   lockBtns(true, 'REMIXING…');
   dealArc({ exp:f.exp||S.exp, pace:f.pace||S.pace, days:S.days, hrs:S.hrs, doneLooks:f.doneLooks }, goal, S.seed, avoid, function(engine){
     S.goalLabel=goal;
-    S.done={}; S.bossDone={}; S.taunt=null;
+    S.done={}; S.skipped={}; S.bossDone={}; S.taunt=null;
     dealQuests(allQ().length);
     addLog('REMIX #'+S.seed+' by '+engine+' ('+TRACKS._ai.domain+', weak-link: '+weakestStat().toUpperCase()+').');
     addLog('Boss revealed: '+track().boss.title);
@@ -819,6 +837,7 @@ $('checkinBtn').onclick=function(){
   S.streak=(last===y||last===today)?S.streak+1:1;
   S.lastCheckin=new Date().toISOString(); S.xp+=10; bumpHeat();
   addLog('Check-in · streak '+S.streak+' (+10 XP)');
+  if(new Date().getHours()<8){ S.ach.early=1; addLog('Early bird check-in.'); }
   if(S.streak>0&&S.streak%7===0){ S.freezes=Math.min(3,(S.freezes||0)+1); addLog('Freeze earned ('+S.freezes+' banked) — 7-day streak.'); }
   render(); toast('Checked in. Streak: '+S.streak);
 };
@@ -827,6 +846,12 @@ function askDanger(title, desc, cb){ $('dangerTitle').textContent=title; $('dang
 $('dangerNo').onclick=function(){ $('dangerBack').classList.add('hidden'); dangerCb=null; };
 $('dangerYes').onclick=function(){ $('dangerBack').classList.add('hidden'); var f=dangerCb; dangerCb=null; if(f) f(); };
 $('resetBtn').onclick=function(){ askDanger('Burn this arc?', 'XP, streaks, heat, log and boss progress go to zero. Export first if you care.', function(){ store.clear(); S=fresh(); render(); window.scrollTo({top:0,behavior:'smooth'}); }); };
+$('wipeBtn').onclick=function(){
+  if(!window.__cloudWipe){ toast('Sign in first.'); return; }
+  askDanger('Wipe cloud saves?', 'Deletes your backed-up saves and shared links from the server. Local game stays.', function(){
+    window.__cloudWipe().then(function(n){ toast('Cloud wiped ('+n+' rows).'); addLog('Cloud wipe confirmed.'); render(); }).catch(function(){ toast('Wipe failed — still signed in?'); });
+  });
+};
 $('exportBtn').onclick=function(){
   var blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='yolo-arc-save.json'; a.click();
@@ -842,19 +867,21 @@ $('importFile').onchange=function(e){
 
 /* ---------- focus timer ---------- */
 function fmt(s){ var m=Math.floor(s/60), r=s%60; return (m<10?'0':'')+m+':'+(r<10?'0':'')+r; }
+function timerLen(){ var s=$('timerLen'); var m=s?Number(s.value)||25:25; return m*60; }
+$('timerLen').onchange=function(){ try{ clearInterval(timerId); }catch(e){} timerOn=false; timerSec=timerLen(); timerElapsed=0; $('timerBtn').textContent='Start'; $('timerTxt').textContent=fmt(timerSec); };
 $('timerBtn').onclick=function(){
   if(timerOn){ clearInterval(timerId); timerOn=false; $('timerBtn').textContent='Start'; return; }
   timerOn=true; $('timerBtn').textContent='Pause';
-  timerId=setInterval(function(){ timerSec--; timerElapsed++; if(timerSec<=0){ clearInterval(timerId); timerOn=false; timerSec=25*60; timerElapsed=0; $('timerBtn').textContent='Start'; finishFocus(true);} $('timerTxt').textContent=fmt(timerSec); },1000);
+  timerId=setInterval(function(){ timerSec--; timerElapsed++; if(timerSec<=0){ clearInterval(timerId); timerOn=false; timerSec=timerLen(); timerElapsed=0; $('timerBtn').textContent='Start'; finishFocus(true);} $('timerTxt').textContent=fmt(timerSec); },1000);
 };
 $('timerDone').onclick=function(){ finishFocus(false); };
-$('timerReset').onclick=function(){ try{ clearInterval(timerId); }catch(e){} timerOn=false; timerSec=25*60; timerElapsed=0; $('timerBtn').textContent='Start'; $('timerTxt').textContent=fmt(timerSec); };
+$('timerReset').onclick=function(){ try{ clearInterval(timerId); }catch(e){} timerOn=false; timerSec=timerLen(); timerElapsed=0; $('timerBtn').textContent='Start'; $('timerTxt').textContent=fmt(timerSec); };
 function finishFocus(auto){
   if(!auto&&timerElapsed<60){ toast('Run the timer 60s+ first — no free XP.'); return; }
   timerElapsed=0;
   S.xp+=15; bumpHeat(); S.ach.focused=1; S.stats.foc++;
   addLog('Focus session logged (+15 XP)'+(auto?' · timer completed':' · manual'));
-  timerSec=25*60; $('timerTxt').textContent=fmt(timerSec);
+  timerSec=timerLen(); $('timerTxt').textContent=fmt(timerSec);
   render(); toast('+15 XP for focused work.');
 }
 

@@ -162,6 +162,8 @@ h4{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;col
 .quest.done .qbox{background:var(--ink);color:#fff}
 .qt b{font-size:14px;display:block}.qt span{font-size:12px;color:var(--mut)}
 .qxp{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;background:var(--ink);color:var(--yellow);padding:4px 8px;border-radius:7px;white-space:nowrap}
+.skipbtn{font-family:"IBM Plex Mono",monospace;font-size:10px;background:transparent;border:1px dashed var(--ink);color:var(--mut);border-radius:7px;padding:4px 8px;cursor:pointer;white-space:nowrap}
+.skipbtn:hover{color:var(--red);border-color:var(--red)}
 .boss{border:3px solid var(--ink);border-radius:16px;background:var(--dark);color:#F4EFE2;box-shadow:7px 7px 0 var(--red);padding:18px}
 .boss-top{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.12em;color:#FF8A70}
 .boss h3{margin:8px 0 4px;font-size:22px}.boss p{color:#C9BFAE;font-size:14px}
