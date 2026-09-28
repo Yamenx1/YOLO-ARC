@@ -121,6 +121,12 @@ async function init() {
     if(!client||!me()) throw new Error('no-auth');
     return await client.mutation('wipe', {});
   };
+  window.__cloudBoard = async function(kind, data){
+    if(!client) throw new Error('no-client');
+    if(kind==='top') return await client.query('top', {});
+    if(!me()) throw new Error('no-auth');
+    return await client.mutation('publish', data);
+  };
   if (me() && cfg.CONVEX_URL && String(cfg.CONVEX_URL).indexOf('PASTE') !== 0) {
     client = new ConvexClient(cfg.CONVEX_URL);
     client.setAuth(async () => {

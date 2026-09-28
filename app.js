@@ -101,7 +101,7 @@ var ACHS = [
   { id:'lvl4', name:'Arc Walker', desc:'Reach level 4' }
 ];
 
-function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, skipped:{}, createdAt:Date.now() }; }
+function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, skipped:{}, stash:[], createdAt:Date.now() }; }
 var S = store.load() || fresh();
 var ORIG_PYTHON_JSON = JSON.stringify(TRACKS.python);
 var selCls = S.cls || 'knight';
@@ -239,6 +239,8 @@ function render(){
   var h=''; var now=new Date();
   for(var i=29;i>=0;i--){ var d=new Date(now.getTime()-i*864e5); var k=d.toISOString().slice(0,10); var v=S.heat[k]||0; var c=v>=3?'l3':v===2?'l2':v===1?'l1':''; h+='<i class="'+c+'" title="'+k+': '+v+'"></i>'; }
   $('heat').innerHTML=h;
+  var wbl=$('weekBars');
+  if(wbl){ var bars=''; for(var w=6;w>=0;w--){ var dd=new Date(now.getTime()-w*864e5); var kk=dd.toISOString().slice(0,10); var vv=S.heat[kk]||0; bars+='<i style="height:'+Math.max(14,vv*30)+'%" title="'+kk+': '+vv+' actions"></i>'; } wbl.innerHTML=bars; }
 
   checkAch();
   $('achList').innerHTML = ACHS.map(function(a){ return '<div class="ach'+(S.ach[a.id]?' on':'')+'"><b>'+(S.ach[a.id]?'■':'□')+'</b><span><b>'+a.name+'</b> — '+a.desc+'</span></div>'; }).join('');
@@ -290,6 +292,7 @@ function render(){
   for(var c=0;c<bb.length;c++){ bb[c].onclick=function(){ bossHit(this.getAttribute('data-b')); }; }
 
   renderDaily();
+  renderStash();
   var ae=$('arenaEmpty'), ag=$('arenaGrid');
   if(ae) ae.classList.toggle('hidden', !!S.hero);
   if(ag) ag.classList.toggle('hidden', !S.hero);
@@ -460,6 +463,65 @@ $('coachBtn').onclick=function(){
 };
 
 /* ---------- DAILY DROP (one bonus quest per day) ---------- */
+function renderBoard(rows){
+  var box=$('boardList'); if(!box) return;
+  if(!rows||!rows.length){ box.innerHTML='<p class="dim">No scores yet — publish yours first.</p>'; return; }
+  box.innerHTML=rows.map(function(r,i){
+    var you=(S.hero&&r.hero===(S.hero||'').toUpperCase())?' ★':'';
+    return '<div class="ach'+(you?' on':'')+'"><b>'+(i+1)+'</b><span><b>'+esc(r.hero)+'</b> — LV '+r.lvl+' · '+r.xp+' XP · streak '+r.streak+you+'</span></div>';
+  }).join('');
+}
+function loadBoard(){
+  var box=$('boardList'); if(!box) return;
+  if(!window.__cloudBoard){ box.innerHTML='<p class="dim">Sign in to see heroes.</p>'; return; }
+  box.innerHTML='<p class="dim">Summoning heroes…</p>';
+  window.__cloudBoard('top').then(renderBoard).catch(function(){ box.innerHTML='<p class="dim">Board unreachable — Convex deployed?</p>'; });
+}
+$('publishBtn').onclick=function(){
+  if(!S.hero){ toast('Start an arc first.'); return; }
+  if(!window.__cloudBoard){ toast('Sign in to publish.'); return; }
+  window.__cloudBoard('pub',{ hero:(S.hero||'Hero').toUpperCase(), xp:S.xp, lvl:lvl(), streak:S.streak })
+  .then(function(){ addLog('Score published to leaderboard.'); loadBoard(); render(); })
+  .catch(function(){ toast('Publish failed — signed in?'); });
+};
+$('boardBtn').onclick=function(){ loadBoard(); };
+function snapshot(){
+  try{ var c=JSON.parse(JSON.stringify(S)); delete c.stash; if(S.goalKey==='_ai'&&TRACKS._ai) c.arc=TRACKS._ai; return c; }catch(e){ return null; }
+}
+$('stashBtn').onclick=function(){
+  S.stash=S.stash||[];
+  if(!S.hero){ toast('Nothing to stash.'); return; }
+  if(S.stash.length>=3){ toast('Stash full — resume or drop one.'); return; }
+  var c=snapshot(); if(!c){ toast('Stash failed.'); return; }
+  S.stash.push(c);
+  var keepStash=S.stash, keepMl=S.ml, keepCls=selCls;
+  S=fresh(); S.stash=keepStash; S.ml=keepMl; S.cls=keepCls; selCls=keepCls; setCls(selCls);
+  store.save(S); render();
+  toast('Arc stashed ('+keepStash.length+'/3). Deal a new one above.');
+  document.querySelector('.cabinet').scrollIntoView({ behavior:'smooth', block:'center' });
+};
+function renderStash(){
+  var box=$('stashList'), n=$('stashN'); if(!box) return;
+  var st=S.stash||[]; if(n) n.textContent=st.length;
+  if(!st.length){ box.innerHTML='<p class="dim">No paused arcs.</p>'; return; }
+  box.innerHTML=st.map(function(a,i){ return '<div class="ach"><b>'+(i+1)+'</b><span><b>'+esc(a.goalLabel||'Arc')+'</b> — LV '+Math.floor((a.xp||0)/500+1)+' · '+(a.xp||0)+' XP</span><span class="tbtns"><button class="btn small" data-res="'+i+'">RESUME</button><button class="btn small ghost" data-drop="'+i+'">DROP</button></span></div>'; }).join('');
+  var rs=box.querySelectorAll('[data-res]'); for(var k=0;k<rs.length;k++){ rs[k].onclick=function(){ resumeStash(Number(this.getAttribute('data-res'))); }; }
+  var ds=box.querySelectorAll('[data-drop]'); for(var d=0;d<ds.length;d++){ ds[d].onclick=function(){ (S.stash||[]).splice(Number(this.getAttribute('data-drop')),1); store.save(S); renderStash(); }; };
+}
+function resumeStash(i){
+  var st=S.stash||[]; if(!st[i]) return;
+  if(S.hero){
+    if(st.length>=3){ toast('Stash full — drop one first.'); return; }
+    var cur=snapshot(); if(cur) st.push(cur);
+  }
+  var item=st.splice(i,1)[0];
+  S=item; S.stash=st; S.ml=S.ml||{str:0,int:0,foc:0,cleared:0,dealt:0}; S.history=S.history||[]; S.daily=S.daily||null; S.taunt=S.taunt||null;
+  if(item.arc) TRACKS._ai=item.arc;
+  selCls=S.cls||'knight'; setCls(selCls);
+  store.save(S); render();
+  toast('Resumed: '+S.goalLabel);
+  document.getElementById('arena').scrollIntoView({ behavior:'smooth' });
+}
 function renderDaily(){
   var box=$('dailyBox'); if(!box) return;
   if(!S.hero){ box.innerHTML='<p class="dim">Start an arc to unlock the daily drop.</p>'; return; }
@@ -933,6 +995,7 @@ setCls(selCls);
 render();
 try{ idleNudge(); }catch(e){}
 try{ if(S.hero){ document.getElementById('arena').scrollIntoView(); } }catch(e){}
+setTimeout(function(){ try{ loadBoard(); }catch(e){} }, 4000);
 
 // public bridge for cloud sync (cloud.js) — localStorage stays source of truth offline
 try{

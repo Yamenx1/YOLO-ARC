@@ -58,3 +58,22 @@ export const wipe = mutation({
     return rows.length + sh.length;
   }
 });
+
+export const publish = mutation({
+  args: { hero: v.string(), xp: v.number(), lvl: v.number(), streak: v.number() },
+  handler: async (ctx, args) => {
+    const userId = await me(ctx);
+    if (!userId) throw new Error('no-auth');
+    const ex = await ctx.db.query('board').withIndex('by_user', (q) => q.eq('userId', userId)).first();
+    if (ex) { await ctx.db.patch(ex._id, { hero: args.hero.slice(0, 18), xp: args.xp, lvl: args.lvl, streak: args.streak, updatedAt: Date.now() }); return ex._id; }
+    return await ctx.db.insert('board', { userId, hero: args.hero.slice(0, 18), xp: args.xp, lvl: args.lvl, streak: args.streak, updatedAt: Date.now() });
+  }
+});
+
+export const top = query({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query('board').withIndex('by_xp').order('desc').take(20);
+    return rows.map((r) => ({ hero: r.hero, xp: r.xp, lvl: r.lvl, streak: r.streak }));
+  }
+});

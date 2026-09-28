@@ -13,5 +13,13 @@ export default defineSchema({
     userId: v.string(),
     data: v.any(),
     createdAt: v.number()
-  })
+  }),
+  board: defineTable({
+    userId: v.string(),
+    hero: v.string(),
+    xp: v.number(),
+    lvl: v.number(),
+    streak: v.number(),
+    updatedAt: v.number()
+  }).index('by_xp', ['xp']).index('by_user', ['userId'])
 });

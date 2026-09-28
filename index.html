@@ -134,7 +134,7 @@
           <div><span>FOC</span><div class="sbar"><i id="focBar" style="width:10%"></i></div><b id="focTxt">1</b></div>
         </div>
         <div class="recover hidden" id="recoveryBox">STREAK BROKEN — a <b>recovery quest</b> is pinned to Level 1. Clear it to restart the streak.</div>
-        <h4>30-DAY HEAT</h4><div class="heat" id="heat"></div>
+        <h4>30-DAY HEAT</h4><div class="heat" id="heat"></div><div class="bars" id="weekBars"></div>
         <h4>FOCUS TIMER</h4>
         <div class="timer"><span class="mono" id="timerTxt">25:00</span><select id="timerLen" title="Minutes"><option>15</option><option selected>25</option><option>50</option></select><span class="tbtns"><button class="btn small" id="timerBtn" type="button">Start</button><button class="btn small ghost" id="timerReset" type="button">Reset</button><button class="btn small ghost" id="timerDone" type="button">Log +15 XP</button></span></div>
         <h4>AI COACH</h4>
@@ -142,6 +142,7 @@
         <h4>ACHIEVEMENTS</h4><div class="achs" id="achList"></div>
       </div>
       <div class="sheet"><h4>DAILY DROP · BONUS QUEST</h4><div id="dailyBox"><p class="dim">Start an arc to unlock the daily drop.</p></div></div>
+      <div class="sheet"><h4>LEADERBOARD · TOP HEROES</h4><div class="tbtns" style="margin-bottom:8px"><button class="btn small" id="publishBtn" type="button">PUBLISH MY SCORE</button><button class="btn small ghost" id="boardBtn" type="button">REFRESH</button></div><div id="boardList" class="achs"><p class="dim">No scores yet — publish yours first.</p></div></div>
       <div class="sheet log"><h4>ADVENTURE LOG</h4><div id="logList" class="loglist"><p class="dim">Nothing yet. Your proofs, check-ins and boss damage land here.</p></div></div>
     </div>
 
@@ -162,6 +163,7 @@
         </div>
       </div>
       <div class="card hidden" id="graveyard" style="margin-top:14px"><h4>GRAVEYARD · FALLEN ARCS</h4><div id="graveList" class="achs"></div></div>
+      <div class="card" id="stashCard" style="margin-top:14px"><h4>STASH · PAUSED ARCS (<span id="stashN">0</span>/3)</h4><div class="tbtns" style="margin-bottom:8px"><button class="btn small" id="stashBtn" type="button">STASH CURRENT ARC</button></div><div id="stashList" class="achs"><p class="dim">No paused arcs.</p></div></div>
       </div>
     </div>
   </div>
