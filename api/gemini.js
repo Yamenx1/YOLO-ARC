@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
       });
       const j = await r.json().catch(() => ({}));
       if (r.status === 404) continue;
-      if (!r.ok) return res.status(502).json({ error: 'ai-' + r.status });
+      if (!r.ok) return res.status(502).json({ error: 'ai-' + r.status, detail: JSON.stringify(j).slice(0, 220) });
       const content = (((j.choices || [])[0] || {}).message || {}).content || '';
       return res.status(200).json({ content, model });
     } catch (e) { return res.status(502).json({ error: 'ai-unreachable' }); }

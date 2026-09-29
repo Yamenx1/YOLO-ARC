@@ -102,7 +102,16 @@ var ACHS = [
 ];
 
 function fresh(){ return { hero:'', cls:'knight', goalKey:'python', goalLabel:'Learn Python', days:60, hrs:'1', exp:'beginner', pace:'balanced', seed:0, xp:0, streak:0, lastCheckin:null, done:{}, bossDone:{}, ach:{}, log:[], heat:{}, stats:{str:1,int:1,foc:1}, ml:{str:0,int:0,foc:0,cleared:0,dealt:0}, daily:null, taunt:null, history:[], ng:0, freezes:0, doneLooks:'', remind:false, skipped:{}, stash:[], createdAt:Date.now() }; }
-var S = store.load() || fresh();
+function normalize(s){
+  var f=fresh();
+  if(!s||typeof s!=='object') return f;
+  for(var k in f){ if(s[k]===undefined) s[k]=f[k]; }
+  if(!s.stats||typeof s.stats!=='object') s.stats={str:1,int:1,foc:1};
+  if(!s.ml||typeof s.ml!=='object') s.ml={str:0,int:0,foc:0,cleared:0,dealt:0};
+  if(!CLASSES[s.cls]) s.cls='knight';
+  return s;
+}
+var S = normalize(store.load());
 var ORIG_PYTHON_JSON = JSON.stringify(TRACKS.python);
 var selCls = S.cls || 'knight';
 var pendingQ = null, pendingQuiz = null, pendingBoss = null;
@@ -923,7 +932,7 @@ $('importBtn').onclick=function(){ $('importFile').click(); };
 $('importFile').onchange=function(e){
   var f=e.target.files[0]; if(!f) return;
   var r=new FileReader();
-  r.onload=function(){ try{ S=JSON.parse(r.result); selCls=S.cls||'knight'; setCls(selCls); render(); toast('Save imported.'); }catch(err){ toast('Bad save file.'); } };
+  r.onload=function(){ try{ S=normalize(JSON.parse(r.result)); selCls=S.cls||'knight'; setCls(selCls); render(); toast('Save imported.'); }catch(err){ toast('Bad save file.'); } };
   r.readAsText(f);
 };
 
