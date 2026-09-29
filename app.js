@@ -674,15 +674,17 @@ function isFile(){ try{ return (typeof location!=='undefined')&&location.protoco
 var lastEngineNote='';
 function geminiChat(msgs, temp, cb, allowPrompt){
   function direct(key, cb2, mi){
-    var models=[GEMINI_MODEL,'gemini-2.5-flash-lite','gemini-2.0-flash'].filter(function(m,i,a){ return m&&a.indexOf(m)===i; });
+    var models=[GEMINI_MODEL,'gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'].filter(function(m,i,a){ return m&&a.indexOf(m)===i; });
     var m=models[mi||0]||models[0];
     fetch(GEMINI_EP,{ method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
       body:JSON.stringify({ model:m, response_format:{type:'json_object'}, temperature:temp, messages:msgs }) })
-    .then(function(r){
-      if(r.status===404&&(mi||0)<models.length-1){ direct(key, cb2, (mi||0)+1); return null; }
-      if(!r.ok) throw new Error('HTTP '+r.status); return r.json();
+    .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return {r:r, j:j}; }); })
+    .then(function(o){
+      var jt=JSON.stringify(o.j).slice(0,300);
+      if((o.r.status===404||(o.r.status===400&&/model/i.test(jt)))&&(mi||0)<models.length-1){ direct(key, cb2, (mi||0)+1); return null; }
+      if(!o.r.ok) throw new Error('HTTP '+o.r.status);
+      cb2(null, (((o.j.choices||[])[0]||{}).message||{}).content||'');
     })
-    .then(function(j){ if(!j) return; cb2(null, (((j.choices||[])[0]||{}).message||{}).content||''); })
     .catch(function(e){ cb2(e); });
   }
   fetch('/api/gemini',{ method:'POST', headers:{ 'Content-Type':'application/json' },
@@ -702,7 +704,7 @@ function geminiChat(msgs, temp, cb, allowPrompt){
 }
 /* ---------- GEMINI ENGINE (the only engine — local smartArc is fallback) ---------- */
 var GEMINI_EP='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-var GEMINI_MODEL='gemini-3.5-flash-lite';
+var GEMINI_MODEL='gemini-2.0-flash';
 var GKEY='yoloarc_gemini_key';
 function getKey(){ try{ return localStorage.getItem(GKEY)||''; }catch(e){ return ''; } }
 function setKey(k){ try{ localStorage.setItem(GKEY,k); }catch(e){} }

@@ -7,7 +7,7 @@ const path = require('path');
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 3000);
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 const GEMINI_EP = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
 const MIME = {
@@ -82,7 +82,7 @@ function handleGemini(req, res) {
     }));
     if (messages.some((m) => (typeof m.content === 'string' ? !m.content : !m.content.length)))
       return send(res, 400, JSON.stringify({ error: 'bad content' }));
-    const MODELS = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'].filter((m, i, a) => m && a.indexOf(m) === i);
+    const MODELS = [GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'].filter((m, i, a) => m && a.indexOf(m) === i);
     for (const model of MODELS) {
       try {
         const r = await fetch(GEMINI_EP, {
@@ -91,7 +91,8 @@ function handleGemini(req, res) {
           body: JSON.stringify({ model, response_format: { type: 'json_object' }, temperature: temp, messages })
         });
         const j = await r.json().catch(() => ({}));
-        if (r.status === 404) continue;
+        const jtxt = JSON.stringify(j).slice(0, 300);
+        if (r.status === 404 || (r.status === 400 && /model/i.test(jtxt))) continue;
         if (!r.ok) return send(res, 502, JSON.stringify({ error: 'ai-' + r.status }));
         const content = (((j.choices || [])[0] || {}).message || {}).content || '';
         return send(res, 200, JSON.stringify({ content, model }));

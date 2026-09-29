@@ -1,7 +1,7 @@
 // Vercel serverless Gemini proxy — same contract as server.js /api/gemini.
 // Secret key lives in Vercel env (GEMINI_API_KEY), never in the page.
 const EP = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const MODELS = [process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+const MODELS = [process.env.GEMINI_MODEL || 'gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']
   .filter((m, i, a) => m && a.indexOf(m) === i);
 
 // tiny per-instance rate limit (Vercel-safe best effort; use KV for hard limits later)
@@ -56,8 +56,9 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify({ model, response_format: { type: 'json_object' }, temperature: temp, messages })
       });
       const j = await r.json().catch(() => ({}));
-      if (r.status === 404) continue;
-      if (!r.ok) return res.status(502).json({ error: 'ai-' + r.status, detail: JSON.stringify(j).slice(0, 220) });
+      const jtxt = JSON.stringify(j).slice(0, 300);
+      if (r.status === 404 || (r.status === 400 && /model/i.test(jtxt))) continue;
+      if (!r.ok) return res.status(502).json({ error: 'ai-' + r.status, detail: jtxt.slice(0, 220) });
       const content = (((j.choices || [])[0] || {}).message || {}).content || '';
       return res.status(200).json({ content, model });
     } catch (e) { return res.status(502).json({ error: 'ai-unreachable' }); }
