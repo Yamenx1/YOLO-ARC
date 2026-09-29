@@ -259,17 +259,23 @@ function render(){
   // levels
   var sc=scaled(), html='';
   for(var li=0; li<sc.length; li++){
-    var ids=idsFor(li), dn=ids.filter(function(id){return S.done[id];}).length;
+    var ids=idsFor(li), dn=ids.filter(function(id){return isDone(id);}).length;
     var locked = li>0 && !lvlDone(li-1);
     var tag = dn===ids.length ? '<span class="tag done">CLEAR</span>' : locked ? '<span class="tag">LOCKED</span>' : '<span class="tag open">OPEN</span>';
-    html+='<div class="level"><div class="level-head"><div class="lvlnum">'+(dn===ids.length?'★':(li+1))+'</div><div><h3>LEVEL '+(li+1)+' — '+esc(sc[li].t)+'</h3><p>'+esc(sc[li].d)+' · '+dn+'/'+ids.length+(locked?' · clear previous level':'')+'</p></div>'+tag+'</div><div class="quests">';
+    html+='<div class="level" style="animation-delay:'+(li*80)+'ms"><div class="level-head"><div class="lvlnum">'+(dn===ids.length?'★':(li+1))+'</div><div><h3>LEVEL '+(li+1)+' — '+esc(sc[li].t)+'</h3><p>'+esc(sc[li].d)+' · '+dn+'/'+ids.length+(locked?' · clear previous level':'')+'</p></div>'+tag+'</div><div class="quests">';
     for(var j=0;j<ids.length;j++){
-      var q=findQ(ids[j]), done=!!S.done[ids[j]];
-      html+='<div class="quest'+(done?' done':'')+(locked&&!done?' locked':'')+'"><div class="qbox" data-q="'+ids[j]+'">'+(done?'✓':'')+'</div><div class="qt"><b>'+esc(q.title)+'</b><span>'+esc(q.sub)+' · +'+q.stat.toUpperCase()+'</span></div>'+((!done&&!locked&&S.xp>=25)?'<button class="skipbtn" data-skip="'+ids[j]+'" title="Skip for 25 XP">SKIP −25</button>':'')+'<div class="qxp">+100 XP</div></div>';
+      var q=findQ(ids[j]), done=isDone(ids[j]);
+      var skipped=!S.done[ids[j]]&&!!(S.skipped&&S.skipped[ids[j]]);
+      html+='<div class="quest'+(done?' done':'')+(locked&&!done?' locked':'')+'"><div class="qbox" data-q="'+ids[j]+'">'+(done?(skipped?'–':'✓'):'')+'</div><div class="qt"><b>'+esc(q.title)+'</b><span>'+esc(q.sub)+' · +'+q.stat.toUpperCase()+(skipped?' · SKIPPED':'')+'</span></div>'+((!done&&!locked&&S.xp>=25)?'<button class="skipbtn" data-skip="'+ids[j]+'" title="Skip for 25 XP">SKIP −25</button>':'')+'<div class="qxp">+100 XP</div></div>';
     }
     if(li===0 && needsRec() && !S.done.R0) html+='<div class="quest"><div class="qbox" data-q="R0"></div><div class="qt"><b>Recovery run: 15-min comeback</b><span>Any 15-min session + 1 sentence of proof</span></div><div class="qxp">+50 XP</div></div>';
     html+='</div></div>';
   }
+  var sig=S.goalLabel+'|'+(S.seed||0)+'|'+(S.ng||0);
+  var sameArc=false;
+  try{ sameArc=(typeof window!=='undefined')&&window.__arcSig===sig; window.__arcSig=sig; }catch(e){}
+  var lvbox=document.getElementById('levels');
+  if(lvbox&&lvbox.classList) lvbox.classList.toggle('noanim', !!sameArc);
   $('levels').innerHTML = html;
   var boxes=document.querySelectorAll('[data-q]');
   for(var b=0;b<boxes.length;b++){ boxes[b].onclick=function(){ openVerify(this.getAttribute('data-q')); }; }
@@ -282,6 +288,9 @@ function render(){
   var mood=$('bossMood');
   if(mood){ mood.textContent = !S.hero ? '' : hp.dead ? 'SLAIN. Hang it on the wall.' : hp.hp>=100 ? 'Mood: yawning. How cute.' : hp.hp>=75 ? 'Mood: it stands up.' : hp.hp>=50 ? 'Mood: ENRAGED. Half dead, twice as mean.' : 'Mood: wobbling. One more strike.'; }
   $('bossHpTxt').textContent = hp.dead ? 'SLAIN' : hp.hp+' HP';
+  var bf=$('bossFace');
+  if(bf) bf.textContent = !S.hero ? '🐉' : hp.dead ? '👑' : hp.hp<=25 ? '💀' : hp.hp<=50 ? '👹' : hp.hp<=75 ? '🐲' : '🐉';
+  try{ var bhp=document.querySelector('.bhp'); if(bhp&&bhp.classList) bhp.classList.toggle('low', !hp.dead&&hp.hp<=25); }catch(e){}
   var sh=$('shareBtn'); if(sh) sh.classList.toggle('hidden', !hp.dead);
   var ng=$('ngBtn'); if(ng) ng.classList.toggle('hidden', !hp.dead);
   var gv=$('graveyard'), gl=$('graveList');
@@ -367,6 +376,16 @@ function geminiJudge(title, proof, cb){
     cb(err&&(err.message==='no-key'||err.message==='needs-key')?{score:8, note:'solid work', engine:'LOCAL'}:{score:7, note:'kept moving', engine:'LOCAL'});
   }, false);
 }
+function spawnFloat(txt){
+  try{
+    var d=document.createElement('div');
+    d.className='floatxp'; d.textContent=txt;
+    d.style.left=(36+Math.random()*28)+'%';
+    d.style.top='36%';
+    document.body.appendChild(d);
+    setTimeout(function(){ try{ d.remove(); }catch(e){} },1500);
+  }catch(e){}
+}
 function bankXp(qid, q, gain, logLine){
   var before=lvl();
   if(qid==='D0'){ S.daily.done=true; S.daily.got=gain; }
@@ -376,6 +395,7 @@ function bankXp(qid, q, gain, logLine){
   if(qid==='R0'){ S.streak=1; S.lastCheckin=new Date().toISOString(); }
   addLog(logLine+' (+'+gain+' XP)');
   closeModal();
+  spawnFloat('+'+gain+' XP');
   if(lvl()!==before){ sfx('level'); bigtoast('LEVEL '+lvl()+' — RANK '+rankName(lvl())); }
   else { sfx('blip'); toast('+'+gain+' XP banked.'); }
   render();
@@ -446,7 +466,7 @@ function bankBoss(){
   var id=pendingBoss;
   S.bossDone[id]=Date.now(); S.xp+=125; bumpHeat();
   addLog('Boss hit: '+v.slice(0,90)+' (+125 XP)');
-  pendingBoss=null; closeModal(); shakeBoss();
+  pendingBoss=null; closeModal(); shakeBoss(); spawnFloat('+125 XP');
   var hp=bossHP();
   if(hp.dead){ sfx('boss'); bigtoast('BOSS SLAIN — ARC COMPLETE'); addLog('BOSS SLAIN. Arc complete: '+S.goalLabel); }
   else { sfx('hit'); toast('25 damage dealt. Boss: '+hp.hp+' HP.'); }
@@ -910,6 +930,7 @@ $('checkinBtn').onclick=function(){
   S.streak=(last===y||last===today)?S.streak+1:1;
   S.lastCheckin=new Date().toISOString(); S.xp+=10; bumpHeat();
   addLog('Check-in · streak '+S.streak+' (+10 XP)');
+  spawnFloat('+10 XP');
   if(new Date().getHours()<8){ S.ach.early=1; addLog('Early bird check-in.'); }
   if(S.streak>0&&S.streak%7===0){ S.freezes=Math.min(3,(S.freezes||0)+1); addLog('Freeze earned ('+S.freezes+' banked) — 7-day streak.'); }
   render(); toast('Checked in. Streak: '+S.streak);

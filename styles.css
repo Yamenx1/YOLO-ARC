@@ -220,13 +220,13 @@ details.score p{margin:8px 0 0}
 @media(max-width:768px){.start h1{font-size:44px}.proof-row{flex-wrap:wrap;gap:14px}.cab-grid .two{grid-template-columns:1fr}.timer{flex-direction:column;gap:8px;align-items:stretch;text-align:center}.head-btns{flex-wrap:wrap}.start-ctas .btn{flex:1 1 100%}}
 @media(prefers-reduced-motion:reduce){.marquee-in{animation:none}#pressStart{animation:none}.shake{animation:none}.tag.open{animation:none}.bigtoast{animation:none}.modal,.modal-back,.toast{animation:none}}
 /* dungeon dark theme — enabled by data-theme="dark" on <html> (JS resolves Auto from the OS) */
-:root[data-theme="dark"]{--paper:#14100C;--card:#221B17;--ink:#F4EFE2;--mut:#B9AE9C;--sh:5px 5px 0 #000;--sh-sm:3px 3px 0 #000;color-scheme:dark}
+:root[data-theme="dark"]{--paper:#0F0B16;--card:#1D1428;--ink:#F4EFE2;--mut:#B9AE9C;--sh:5px 5px 0 #000;--sh-sm:3px 3px 0 #000;color-scheme:dark}
 :root[data-theme="dark"] body{background-image:radial-gradient(#F4EFE214 1px,transparent 1px)}
 :root[data-theme="dark"] .nav{background:#14100C}
-:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:#0e0b09;color:var(--ink)}
-:root[data-theme="dark"] .cls,:root[data-theme="dark"] .quest,:root[data-theme="dark"] .timer,:root[data-theme="dark"] .logitem,:root[data-theme="dark"] .quizopt,:root[data-theme="dark"] .stats3>div,:root[data-theme="dark"] .ach,:root[data-theme="dark"] .level-head{background:#2A211B}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:#120C1C;color:var(--ink)}
+:root[data-theme="dark"] .cls,:root[data-theme="dark"] .quest,:root[data-theme="dark"] .timer,:root[data-theme="dark"] .logitem,:root[data-theme="dark"] .quizopt,:root[data-theme="dark"] .stats3>div,:root[data-theme="dark"] .ach,:root[data-theme="dark"] .level-head{background:#2A1F38}
 :root[data-theme="dark"] .modal,:root[data-theme="dark"] .cabinet,:root[data-theme="dark"] .card,:root[data-theme="dark"] .sheet,:root[data-theme="dark"] .rule,:root[data-theme="dark"] .poster,:root[data-theme="dark"] .level{background:var(--card)}
-:root[data-theme="dark"] .xpbar,:root[data-theme="dark"] .sbar,:root[data-theme="dark"] .heat i{background:#0e0b09}
+:root[data-theme="dark"] .xpbar,:root[data-theme="dark"] .sbar,:root[data-theme="dark"] .heat i{background:#120C1C}
 :root[data-theme="dark"] .lvlnum,:root[data-theme="dark"] .num,:root[data-theme="dark"] .cls-ico,:root[data-theme="dark"] .qxp{color:#181310}
 :root[data-theme="dark"] .lvlbox{color:#181310}
 :root[data-theme="dark"] .tag.open{color:#181310}
@@ -242,9 +242,26 @@ details.score p{margin:8px 0 0}
 :root[data-theme="dark"] .lvlbox em{background:#000}
 :root[data-theme="dark"] .bigtoast{color:#181310}
 :root[data-theme="dark"] .lede,:root[data-theme="dark"] .rule p{color:#D8CFC0}
-:root[data-theme="dark"] .chips button{background:#2A211B;color:var(--ink)}
-:root[data-theme="dark"] .qbox{background:#2A211B;color:var(--ink)}
+:root[data-theme="dark"] .chips button{background:#2A1F38;color:var(--ink)}
+:root[data-theme="dark"] .qbox{background:#2A1F38;color:var(--ink)}
 :root[data-theme="dark"] .quest.done .qbox{color:#181310}
 :root[data-theme="dark"] .cls.is-sel b,:root[data-theme="dark"] .ach.on b{color:#181310}
 :root[data-theme="dark"] .quest.done{background:#14532D}
 :root[data-theme="dark"] .quest.done .qt span{color:#BBF7D0}
+/* ===== GAME FEEL ===== */
+@keyframes stripes{to{background-position:-32px 0}}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}}
+@keyframes floatUp{0%{opacity:0;transform:translate(-50%,0) scale(.8)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-110px) scale(1.1)}}
+@keyframes hpPulse{50%{filter:brightness(1.6)}}
+@keyframes flick{from{box-shadow:2px 2px 0 var(--red)}to{box-shadow:2px 2px 0 var(--red),0 0 12px var(--red)}}
+.xpbar i{background:repeating-linear-gradient(45deg,var(--green) 0 8px,#2BB673 8px 16px);animation:stripes 1.1s linear infinite}
+.level{animation:riseIn .38s ease-out backwards}
+.noanim .level{animation:none}
+.floatxp{position:fixed;z-index:95;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:22px;color:var(--yellow);text-shadow:2px 2px 0 #000;pointer-events:none;animation:floatUp 1.4s ease-out forwards}
+.bhp.low i{animation:hpPulse .7s infinite}
+.streak.hot{animation:flick .6s infinite alternate}
+.boss{position:relative;overflow:hidden}
+.boss::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000066 3px 4px);border-radius:16px;pointer-events:none}
+.cabinet::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#00000033 3px 4px);border-radius:18px;pointer-events:none;z-index:4}
+.boss-face{font-size:20px;filter:drop-shadow(0 0 6px #ff4b2d)}
+@media(prefers-reduced-motion:reduce){.xpbar i,.streak.hot,.bhp.low i{animation:none}.level{animation:none}.floatxp{display:none}}
